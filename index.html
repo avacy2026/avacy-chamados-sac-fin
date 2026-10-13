@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Chamados Financeiro</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--roxo:#7C3AED;--roxo-light:#A78BFA;--roxo-dark:#5B21B6;--amber:#F59E0B;--teal:#0D9488;--teal-light:#2DD4BF;--bg:#0F0D1A;--card:#1A1730;--card2:#221E38;--input:#2A2545;--line:#3D3660;--ink:#F8F7FF;--mute:#9B96C0;--dim:#6B6490;--ok:#10B981;--bad:#EF4444;--r:12px}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
+header{background:linear-gradient(135deg,#1A1730 0%,#0F0D1A 100%);border-bottom:1px solid var(--line);padding:0 32px;min-height:64px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.brand{font-size:20px;font-weight:800;background:linear-gradient(90deg,var(--roxo-light),var(--teal-light));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.env{background:var(--amber);color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.tabs{display:flex;gap:4px}
+.tabs button{background:transparent;border:0;color:var(--mute);padding:8px 20px;border-radius:8px;cursor:pointer;font:500 14px 'Inter',sans-serif;transition:all .2s}
+.tabs button:hover{background:var(--card2);color:var(--ink)}
+.tabs button.on{background:linear-gradient(135deg,var(--roxo-dark),var(--roxo));color:#fff}
+main{padding:28px 32px;max-width:1400px;margin:0 auto}
+.cfgwarn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.4);color:var(--amber);padding:10px 14px;border-radius:8px;margin-bottom:12px;display:none}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;background:var(--card);padding:16px;border-radius:var(--r);border:1px solid var(--line);margin-bottom:14px}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-size:11px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+input,select,textarea{font:14px 'Inter',sans-serif;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--input);color:var(--ink);outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--roxo-light);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+input[type=date]{color-scheme:dark}
+select option{background:var(--card2)}
+::placeholder{color:var(--dim)}
+.invalid{border-color:var(--bad)!important;background:rgba(239,68,68,.08)!important}
+textarea{resize:vertical;min-height:70px}
+.btn{font:600 13px 'Inter',sans-serif;padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mute);cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn:hover{border-color:var(--roxo-light);color:var(--ink)}
+.btn.pri{background:linear-gradient(135deg,var(--roxo),var(--roxo-dark));border-color:transparent;color:#fff}
+.btn.pri:hover{filter:brightness(1.15)}
+.btn.danger{background:transparent;color:var(--bad);border-color:rgba(239,68,68,.4)}
+.btn.danger:hover{background:rgba(239,68,68,.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.spacer{flex:1}
+.count{color:var(--mute);font-size:12px;margin:0 2px 8px}
+.tablewrap{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1100px}
+.nw{white-space:nowrap}
+th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--mute);padding:12px 14px;border-bottom:1px solid var(--line);background:var(--card2);letter-spacing:.05em}
+td{padding:12px 14px;border-bottom:1px solid rgba(61,54,96,.5);vertical-align:top}
+tbody tr{cursor:pointer;transition:background .15s}
+tbody tr:hover{background:var(--card2)}
+.sub{color:var(--mute);font-size:12px;margin-top:2px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+td.mono b{color:var(--roxo-light)}
+.empty{text-align:center;color:var(--mute);padding:40px!important;cursor:default}
+.st{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.st-aberto{background:rgba(59,130,246,.15);color:#93C5FD;border-color:rgba(59,130,246,.4)}
+.st-andamento{background:rgba(124,58,237,.18);color:var(--roxo-light);border-color:rgba(124,58,237,.45)}
+.st-aguardando{background:rgba(155,150,192,.1);color:var(--mute);border:1px dashed var(--dim)}
+.st-devolvido{background:rgba(13,148,136,.15);color:var(--teal-light);border-color:rgba(13,148,136,.45)}
+.st-finalizado{background:rgba(100,100,120,.2);color:#C7C3E0;border-color:rgba(100,100,120,.4)}
+.st-cancelado{background:transparent;color:var(--dim);border-color:rgba(100,100,120,.3);text-decoration:line-through}
+.more{display:block;margin:14px auto}
+.cp{border:0;background:none;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 4px;border-radius:4px;transition:all .15s}
+.cp:hover{color:var(--roxo-light);background:rgba(124,58,237,.1)}
+/* drawer */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:40}
+.overlay.show{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(600px,100%);background:var(--card);border-left:1px solid var(--line);z-index:50;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.5)}
+.drawer.show{transform:none}
+.dh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:var(--card2)}
+.dh #dTitle{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.x{margin-left:auto;border:0;background:none;font-size:24px;cursor:pointer;color:var(--mute);line-height:1}
+.x:hover{color:var(--ink)}
+.db{overflow:auto;padding:18px 20px;flex:1}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:16px}
+.info .k{font-size:11px;color:var(--mute);text-transform:uppercase;font-weight:600;letter-spacing:.05em}
+.info .v{margin-top:3px;word-break:break-word}
+.full{grid-column:1/-1}
+.obs{background:var(--input);border:1px solid var(--line);border-radius:8px;padding:10px 12px;white-space:pre-wrap}
+.warn{color:var(--amber);font-size:12px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:16px}
+.acts:empty{display:none}
+h4{margin:0 0 10px;font-size:11px;text-transform:uppercase;color:var(--mute);letter-spacing:.05em}
+.ev{text-align:center;margin:12px 0;font-size:12px;color:var(--dim)}
+.ev span{background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:99px;color:var(--ink);font-weight:600}
+.ev small{display:block;margin-top:4px}
+.msg{max-width:85%;margin:8px 0;padding:9px 12px;border-radius:10px;border:1px solid var(--line)}
+.msg.sac{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.35)}
+.msg.fin{background:rgba(13,148,136,.12);border-color:rgba(13,148,136,.35);margin-left:auto}
+.mh{font-size:12px;margin-bottom:4px}
+.mh .tm{color:var(--mute)}
+.mh small{color:var(--dim);margin-left:4px}
+.mb{white-space:pre-wrap;word-break:break-word}
+.composer{border-top:1px solid var(--line);padding:12px 20px;display:flex;gap:8px;align-items:flex-end;background:var(--card2)}
+.composer textarea{flex:1;min-height:56px}
+.composer select{width:150px}
+#askWhoWrap{margin-bottom:12px}
+.anexos{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.anx{display:flex;align-items:center;gap:12px;background:var(--input);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.anx .ic{font-size:10px;font-weight:800;padding:6px 7px;border-radius:6px;background:rgba(239,68,68,.15);color:#FCA5A5;border:1px solid rgba(239,68,68,.35)}
+.anx .ic.img{background:rgba(13,148,136,.15);color:var(--teal-light);border-color:rgba(13,148,136,.4)}
+.anx-i{flex:1;min-width:0}
+.anx-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn.clip{padding:9px 12px;font-size:15px}
+input[type=file]{padding:7px;cursor:pointer}
+input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;margin-right:10px;cursor:pointer}
+#askWho{width:100%}
+/* modais */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal.show{display:flex}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(460px,100%);max-height:92vh;overflow:auto}
+.box.wide{width:min(720px,100%)}
+.box h3{margin:0 0 16px;font-size:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid2 .f input,.grid2 .f select,.grid2 .f textarea{width:100%}
+.hint{font-size:12px;color:var(--mute);min-height:16px}
+.hint.bad{color:var(--bad)}
+.foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{background:rgba(124,58,237,.18);color:var(--roxo-light);border:1px solid rgba(124,58,237,.4);border-radius:99px;padding:3px 4px 3px 10px;font-size:12px;display:inline-flex;align-items:center;gap:2px}
+.chip button{border:0;background:none;cursor:pointer;color:var(--roxo-light);font-size:14px;line-height:1;padding:0 4px}
+#askLabel{margin-bottom:10px;color:var(--ink)}
+#askLabel ul{padding-left:18px;margin:8px 0}
+#askText,#askInput{width:100%}
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);color:var(--ink);padding:11px 18px;border-radius:10px;z-index:80;display:none;max-width:90%;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast.ok{border-color:rgba(16,185,129,.5);color:var(--ok)}.toast.bad{border-color:rgba(239,68,68,.5);color:var(--bad)}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+@media(max-width:640px){header{padding:10px 16px}main{padding:16px}.composer{flex-wrap:wrap}.info,.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">Chamados Financeiro</span>
+  <span class="env" id="env"></span>
+  <div class="tabs">
+    <button data-tab="SAC">SAC</button>
+    <button data-tab="FIN">Financeiro</button>
+  </div>
+</header>
+
+<main>
+  <div class="cfgwarn" id="cfgwarn">Configure <b>SUPABASE_URL</b> e <b>SUPABASE_KEY</b> no início do script para conectar.</div>
+
+  <div class="bar">
+    <div class="f" style="flex:1;min-width:220px"><label>Busca</label><input id="fBusca" placeholder="Protocolo, cliente, CPF/CNPJ, código, NF, telefone"></div>
+    <div class="f"><label>Status</label><select id="fStatus"></select></div>
+    <div class="f"><label>Tipo</label><select id="fTipo"></select></div>
+    <div class="f"><label>Aberto por</label><select id="fAberto"></select></div>
+    <div class="f"><label>De</label><input type="date" id="fDe"></div>
+    <div class="f"><label>Até</label><input type="date" id="fAte"></div>
+    <button class="btn" id="btnLimpar">Limpar</button>
+    <div class="spacer"></div>
+    <button class="btn pri" id="btnNovo">+ Novo chamado</button>
+  </div>
+
+  <div class="count" id="count"></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Protocolo</th><th>Abertura</th><th>Cliente</th><th>CPF / CNPJ</th><th>Código</th><th>NFs</th><th>Tipo</th><th>Status</th><th>Aberto por</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <button class="btn more" id="more" style="display:none">Carregar mais</button>
+</main>
+
+<div class="overlay" id="ov"></div>
+<aside class="drawer" id="drawer">
+  <div class="dh"><div id="dTitle"></div><button class="x" id="dClose" title="Fechar">×</button></div>
+  <div class="db" id="dBody"></div>
+  <div class="composer" id="composer">
+    <select id="msgWho" title="Seu nome"></select>
+    <textarea id="msg" placeholder="Escreva uma mensagem (Ctrl+Enter envia)"></textarea>
+    <button class="btn clip" id="btnAnexo" title="Anexar arquivo (PDF ou imagem, até 10 MB)">📎</button>
+    <input type="file" id="fileIn" multiple accept=".pdf,image/png,image/jpeg,image/webp" hidden>
+    <button class="btn pri" id="btnMsg">Enviar</button>
+  </div>
+</aside>
+
+<!-- Novo chamado -->
+<div class="modal" id="novoModal">
+  <div class="box wide">
+    <h3>Novo chamado</h3>
+    <div class="grid2">
+      <div class="f full"><label>Seu nome (quem está abrindo) *</label><select id="nWho"></select></div>
+      <div class="f"><label>Cliente</label><input id="nNome"></div>
+      <div class="f"><label>Telefone</label><input id="nTel" inputmode="numeric"></div>
+      <div class="f"><label>CPF / CNPJ</label><input id="nDoc" inputmode="numeric"><div class="hint" id="nDocHint"></div></div>
+      <div class="f"><label>Código do cliente</label><input id="nCod"></div>
+      <div class="f"><label>Tipo de demanda</label><select id="nTipo"></select></div>
+      <div class="f"><label>Notas fiscais</label><input id="nNf" placeholder="Digite e tecle Enter"><div class="chips" id="nfChips"></div></div>
+      <div class="f full"><label>Observação</label><textarea id="nObs"></textarea><div class="hint" id="nObsHint"></div></div>
+      <div class="f full"><label>Anexos (PDF ou imagem, até 10 MB cada)</label><input type="file" id="nFiles" multiple accept=".pdf,image/png,image/jpeg,image/webp"></div>
+    </div>
+    <div class="foot"><button class="btn" id="nCancel">Cancelar</button><button class="btn pri" id="nSalvar">Abrir chamado</button></div>
+  </div>
+</div>
+
+<!-- Modal genérico -->
+<div class="modal" id="askModal">
+  <div class="box">
+    <h3 id="askTitle"></h3>
+    <div class="f" id="askWhoWrap"><label>Seu nome *</label><select id="askWho"></select></div>
+    <div id="askLabel"></div>
+    <textarea id="askText"></textarea>
+    <input id="askInput">
+    <div class="foot"><button class="btn" id="askCancel">Voltar</button><button class="btn pri" id="askOk">Confirmar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ CONFIGURAÇÃO ============
+const CONFIG = {
+  SUPABASE_URL: 'https://ufsoulckfkhtwurgyxlp.supabase.co',
+  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmc291bGNrZmtodHd1cmd5eGxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNjczMTYsImV4cCI6MjA5Nzg0MzMxNn0.3JvUgfcllDgvs-THSADTjg15UYk5Bv8fA6GC5i9Cpg0',
+  PREFIX: '',                // homologação: 'hml_'
+  AMBIENTE: ''               // homologação: 'HOMOLOGAÇÃO'
+};
+// ======================================
+
+const TIPOS = ['Prorrogação de boleto','Segunda via de boleto','Erro no pagamento','Pagar título protestado','Carta de anuência','Pagamento não baixado','Boleto não registrado','Outros assuntos'];
+const STATUS = ['Aberto','Em andamento','Aguardando','Devolvido','Finalizado','Cancelado'];
+const STATUS_LABEL = {Aguardando:'Aguardando SAC/cliente', Devolvido:'Devolvido ao SAC'};
+const STATUS_CLS = {'Aberto':'aberto','Em andamento':'andamento','Aguardando':'aguardando','Devolvido':'devolvido','Finalizado':'finalizado','Cancelado':'cancelado'};
+const FINAIS = ['Finalizado','Cancelado'];
+const PAGE = 30;
+const T = n => CONFIG.PREFIX + 'fin_' + n;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dig = s => String(s || '').replace(/\D/g, '');
+const ls = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+};
+const statusLabel = s => STATUS_LABEL[s] || s;
+const badge = s => `<span class="st st-${STATUS_CLS[s]||''}">${esc(statusLabel(s))}</span>`;
+const timeLabel = t => t === 'FIN' ? 'Financeiro' : 'SAC';
+const copyBtn = v => v ? `<button class="cp" data-copy="${esc(v)}" title="Copiar">⧉</button>` : '';
+
+const configurado = !CONFIG.SUPABASE_URL.includes('COLE_');
+const sb = configurado ? supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY) : null;
+
+const S = { tab: ls.get('fin_tab') === 'FIN' ? 'FIN' : 'SAC', pessoas: [], rows: [], total: 0, page: 0, loading: false, open: null, hist: [], anexos: [] };
+
+// ---------- utilidades ----------
+function fmtDT(iso){
+  if(!iso) return '';
+  return new Date(iso).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(',','');
+}
+function maskDoc(v){
+  const d = dig(v).slice(0,14);
+  if(d.length <= 11) return d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');
+}
+function maskTel(v){
+  const d = dig(v).slice(0,11);
+  if(!d) return '';
+  if(d.length <= 2) return '(' + d;
+  if(d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+  if(d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+}
+function validCPF(c){
+  if(c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  let s = 0; for(let i=0;i<9;i++) s += +c[i]*(10-i);
+  let r = (s*10)%11%10; if(r !== +c[9]) return false;
+  s = 0; for(let i=0;i<10;i++) s += +c[i]*(11-i);
+  r = (s*10)%11%10; return r === +c[10];
+}
+function validCNPJ(c){
+  if(c.length !== 14 || /^(\d)\1+$/.test(c)) return false;
+  const calc = n => { let s=0, p=n-7; for(let i=0;i<n;i++){ s += +c[i]*p--; if(p<2) p=9; } const r = s%11; return r<2 ? 0 : 11-r; };
+  return calc(12) === +c[12] && calc(13) === +c[13];
+}
+const docValido = d => !d || (d.length === 11 ? validCPF(d) : d.length === 14 ? validCNPJ(d) : false);
+
+let toastT;
+function toast(msg, kind=''){
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast ' + kind; t.style.display = 'block';
+  clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 3500);
+}
+function err(e){ console.error(e); toast('Erro: ' + (e?.message || e), 'bad'); }
+
+function ask({title, label='', required=false, field='text', okLabel='Confirmar', danger=false, pessoas=null}){
+  return new Promise(res => {
+    const m = $('#askModal'), ta = $('#askText'), inp = $('#askInput'), ok = $('#askOk');
+    $('#askTitle').textContent = title;
+    $('#askLabel').innerHTML = label;
+    ta.style.display = field === 'text' ? '' : 'none';
+    inp.style.display = field === 'input' ? '' : 'none';
+    const el = field === 'text' ? ta : field === 'input' ? inp : null;
+    if(el){ el.value = ''; el.classList.remove('invalid'); }
+    ok.textContent = okLabel; ok.className = 'btn ' + (danger ? 'danger' : 'pri');
+    $('#askWhoWrap').style.display = pessoas ? '' : 'none';
+    if(pessoas){ fillWho($('#askWho'), pessoas, false); $('#askWho').classList.remove('invalid'); }
+    m.classList.add('show');
+    setTimeout(() => (pessoas ? $('#askWho') : (el || ok)).focus(), 50);
+    const done = v => { m.classList.remove('show'); ok.onclick = $('#askCancel').onclick = null; res(v); };
+    ok.onclick = () => {
+      const v = el ? el.value.trim() : '';
+      let nome = null;
+      if(pessoas){ nome = pegaNome($('#askWho')); if(!nome) return; }
+      if(required && !v){ el.classList.add('invalid'); el.focus(); return; }
+      done(pessoas ? { nome, texto: v } : v);
+    };
+    $('#askCancel').onclick = () => done(null);
+  });
+}
+
+// ---------- pessoas (nome escolhido no momento da ação) ----------
+async function loadPessoas(){
+  const { data, error } = await sb.from(T('pessoas')).select('*').eq('ativo', true).order('nome');
+  if(error) return err(error);
+  S.pessoas = data; renderFiltroAberto(); fillWho($('#msgWho'), S.tab);
+}
+function fillWho(sel, time, keep = true){
+  const cur = keep ? sel.value : '';
+  sel.dataset.time = time;
+  sel.innerHTML = `<option value="">Seu nome…</option>` +
+    S.pessoas.filter(p => p.time === time).map(p => `<option ${p.nome === cur ? 'selected' : ''}>${esc(p.nome)}</option>`).join('') +
+    `<option value="__add">+ Adicionar nome…</option>`;
+}
+function renderFiltroAberto(){
+  const cur = $('#fAberto').value;
+  $('#fAberto').innerHTML = `<option value="">Todos</option>` +
+    S.pessoas.filter(p => p.time === 'SAC').map(p => `<option ${p.nome === cur ? 'selected' : ''}>${esc(p.nome)}</option>`).join('');
+}
+// "+ Adicionar nome…" em qualquer seletor de nome
+document.addEventListener('change', async e => {
+  const sel = e.target;
+  if(sel.tagName !== 'SELECT' || sel.value !== '__add') return;
+  const nome = (prompt(`Nome para o time ${timeLabel(sel.dataset.time)}:`) || '').trim();
+  if(!nome){ sel.value = ''; return; }
+  const { error } = await sb.from(T('pessoas')).insert({ nome, time: sel.dataset.time });
+  if(error && error.code !== '23505'){ sel.value = ''; return err(error); }
+  await loadPessoas();
+  fillWho(sel, sel.dataset.time, false); sel.value = nome;
+});
+function pegaNome(sel){
+  const v = sel.value;
+  if(!v || v === '__add'){ sel.classList.add('invalid'); sel.focus(); toast('Selecione seu nome', 'bad'); return null; }
+  sel.classList.remove('invalid'); return v;
+}
+
+// ---------- abas ----------
+function setTab(t){
+  S.tab = t; ls.set('fin_tab', t);
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('#btnNovo').style.display = t === 'SAC' ? '' : 'none';
+  closeDrawer();
+  if(sb) fillWho($('#msgWho'), t, false);
+}
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+// ---------- lista ----------
+function buildQuery(){
+  let q = sb.from(T('chamados')).select('*', { count:'exact' }).order('created_at', { ascending:false });
+  const st = $('#fStatus').value;
+  if(st === 'ativos') q = q.not('status', 'in', '("Finalizado","Cancelado")');
+  else if(st) q = q.eq('status', st);
+  if($('#fTipo').value) q = q.eq('tipo', $('#fTipo').value);
+  if($('#fAberto').value) q = q.eq('aberto_por', $('#fAberto').value);
+  if($('#fDe').value) q = q.gte('created_at', $('#fDe').value + 'T00:00:00-03:00');
+  if($('#fAte').value) q = q.lte('created_at', $('#fAte').value + 'T23:59:59.999-03:00');
+  const raw = $('#fBusca').value.replace(/[,()*%{}"\\:]/g, ' ').trim();
+  if(raw){
+    const d = dig(raw);
+    const ors = [`cliente_nome.ilike.*${raw}*`, `codigo_cliente.ilike.*${raw}*`, `protocolo.ilike.*${raw}*`, `nfs_busca.ilike.*${raw}*`];
+    if(d.length >= 3){ ors.push(`documento.ilike.*${d}*`, `telefone.ilike.*${d}*`); }
+    q = q.or(ors.join(','));
+  }
+  return q;
+}
+async function load(reset = true){
+  if(!sb || S.loading) return;
+  S.loading = true;
+  if(reset){ S.page = 0; S.rows = []; }
+  const from = S.page * PAGE;
+  const { data, error, count } = await buildQuery().range(from, from + PAGE - 1);
+  S.loading = false;
+  if(error) return err(error);
+  S.rows = S.rows.concat(data); S.total = count || 0; S.page++;
+  renderList();
+}
+function renderList(){
+  $('#rows').innerHTML = !S.rows.length
+    ? `<tr><td colspan="9" class="empty">Nenhum chamado encontrado</td></tr>`
+    : S.rows.map(r => `<tr data-id="${r.id}">
+        <td class="mono nw"><b>${esc(r.protocolo)}</b>${copyBtn(r.protocolo)}</td>
+        <td class="nw">${fmtDT(r.created_at)}</td>
+        <td>${esc(r.cliente_nome) || '<span class="sub">-</span>'}</td>
+        <td class="nw">${r.documento ? esc(maskDoc(r.documento)) + copyBtn(r.documento) : '<span class="sub">-</span>'}</td>
+        <td class="nw">${r.codigo_cliente ? esc(r.codigo_cliente) + copyBtn(r.codigo_cliente) : '<span class="sub">-</span>'}</td>
+        <td>${(r.nfs || []).length ? r.nfs.map(n => `<span class="nw">${esc(n)}${copyBtn(n)}</span>`).join(' ') : '<span class="sub">-</span>'}</td>
+        <td>${esc(r.tipo)}</td>
+        <td>${badge(r.status)}</td>
+        <td>${esc(r.aberto_por)}</td></tr>`).join('');
+  $('#count').textContent = S.total ? `${S.rows.length} de ${S.total} chamados` : '';
+  $('#more').style.display = S.rows.length < S.total ? '' : 'none';
+}
+$('#rows').onclick = e => { const tr = e.target.closest('tr[data-id]'); if(tr) openDetail(+tr.dataset.id, true); };
+$('#more').onclick = () => load(false);
+
+let buscaT;
+$('#fBusca').oninput = () => { clearTimeout(buscaT); buscaT = setTimeout(load, 400); };
+['#fStatus','#fTipo','#fAberto','#fDe','#fAte'].forEach(s => $(s).onchange = () => load());
+$('#btnLimpar').onclick = () => { $('#fBusca').value=''; $('#fStatus').value='ativos'; $('#fTipo').value=''; $('#fAberto').value=''; $('#fDe').value=''; $('#fAte').value=''; load(); };
+
+// ---------- anexos ----------
+const BUCKET = 'fin-anexos';
+const PASTA = CONFIG.PREFIX ? 'hml' : 'prod';
+const MAX_MB = 10;
+const TIPOS_ARQ = ['application/pdf','image/png','image/jpeg','image/webp'];
+const fmtSize = b => b < 1048576 ? Math.max(1, Math.round(b/1024)) + ' KB' : (b/1048576).toFixed(1).replace('.', ',') + ' MB';
+const safeName = n => n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.\-]+/g, '_').slice(-120);
+
+function validaArquivos(files){
+  for(const f of files){
+    if(f.size > MAX_MB * 1048576){ toast(`${f.name}: acima de ${MAX_MB} MB`, 'bad'); return false; }
+    if(!TIPOS_ARQ.includes(f.type)){ toast(`${f.name}: envie PDF ou imagem (PNG, JPG, WEBP)`, 'bad'); return false; }
+  }
+  return true;
+}
+async function subirAnexos(chamadoId, files, nome, time){
+  let ok = 0;
+  for(const f of files){
+    const caminho = `${PASTA}/${chamadoId}/${Date.now()}_${safeName(f.name)}`;
+    const up = await sb.storage.from(BUCKET).upload(caminho, f, { contentType: f.type, upsert: false });
+    if(up.error){ err(up.error); continue; }
+    const r = await sb.from(T('anexos')).insert({ chamado_id: chamadoId, autor: nome, time, nome_arquivo: f.name, caminho, tamanho: f.size, tipo_mime: f.type });
+    if(r.error){ err(r.error); continue; }
+    await sb.from(T('historico')).insert({ chamado_id: chamadoId, autor: nome, time, tipo: 'status', texto: `Anexou: ${f.name}` });
+    ok++;
+  }
+  return ok;
+}
+async function baixarAnexo(id){
+  const a = S.anexos.find(x => x.id === id); if(!a) return;
+  const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(a.caminho, 60, { download: a.nome_arquivo });
+  if(error) return err(error);
+  const l = document.createElement('a'); l.href = data.signedUrl; l.target = '_blank'; l.rel = 'noopener';
+  document.body.appendChild(l); l.click(); l.remove();
+}
+$('#btnAnexo').onclick = () => { if(pegaNome($('#msgWho'))) $('#fileIn').click(); };
+$('#fileIn').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if(!files.length || !S.open) return;
+  const n = pegaNome($('#msgWho')); if(!n) return;
+  if(!validaArquivos(files)) return;
+  $('#btnAnexo').disabled = true; toast('Enviando anexo…');
+  const ok = await subirAnexos(S.open.id, files, n, S.tab);
+  $('#btnAnexo').disabled = false;
+  if(ok) toast(`${ok} arquivo(s) anexado(s)`, 'ok');
+  openDetail(S.open.id);
+};
+
+// ---------- detalhe ----------
+async function openDetail(id, doClique = false){
+  const [r1, r2, r3] = await Promise.all([
+    sb.from(T('chamados')).select('*').eq('id', id).single(),
+    sb.from(T('historico')).select('*').eq('chamado_id', id).order('created_at').order('id'),
+    sb.from(T('anexos')).select('*').eq('chamado_id', id).order('created_at')
+  ]);
+  if(r1.error || r2.error) return err(r1.error || r2.error);
+  if(r3.error) err(r3.error);
+  S.open = r1.data; S.hist = r2.data; S.anexos = r3.data || [];
+  const i = S.rows.findIndex(r => r.id === id);
+  if(i >= 0){ S.rows[i] = r1.data; renderList(); }
+
+  renderDetail(); showDrawer();
+  // Financeiro abriu um chamado novo: pergunta quem assume e passa para Em andamento
+  if(doClique && S.tab === 'FIN' && S.open.status === 'Aberto') ACOES.assumir();
+}
+
+function acoes(c){
+  const a = [];
+  if(S.tab === 'FIN'){
+    if(c.status === 'Aberto') a.push(['Assumir chamado','pri','assumir']);
+    if(c.status === 'Em andamento'){ a.push(['Devolver ao SAC','pri','devolver']); a.push(['Aguardando SAC/cliente','','aguardar']); }
+    if(c.status === 'Aguardando') a.push(['Retomar atendimento','pri','retomar']);
+  } else {
+    if(c.status === 'Devolvido'){ a.push(['Finalizar chamado','pri','finalizar']); a.push(['Reenviar ao Financeiro','','reenviar']); }
+    if(!FINAIS.includes(c.status)) a.push(['Cancelar chamado','danger','cancelar']);
+  }
+  return a;
+}
+
+function renderDetail(){
+  const c = S.open, final = FINAIS.includes(c.status);
+  $('#dTitle').innerHTML = `<span class="mono">${esc(c.protocolo)}</span>${copyBtn(c.protocolo)} ${badge(c.status)}`;
+  const doc = c.documento ? `${esc(maskDoc(c.documento))}${copyBtn(c.documento)}${docValido(c.documento) ? '' : ' <span class="warn">inválido</span>'}` : '-';
+  const nfs = (c.nfs || []).length ? c.nfs.map(n => `<span class="mono">${esc(n)}</span>${copyBtn(n)}`).join('&nbsp;&nbsp;') : '-';
+  const linha = (k, v, cls='') => `<div class="${cls}"><div class="k">${k}</div><div class="v">${v || '-'}</div></div>`;
+  let extra = '';
+  if(c.status === 'Cancelado') extra = linha('Cancelado', `${fmtDT(c.cancelado_em)} por ${esc(c.cancelado_por)}<div class="sub">Motivo: ${esc(c.motivo_cancelamento)}</div>`, 'full');
+  if(c.status === 'Finalizado') extra = linha('Finalizado', `${fmtDT(c.finalizado_em)} por ${esc(c.finalizado_por)}`, 'full');
+
+  const hist = S.hist.map(h => h.tipo === 'status'
+    ? `<div class="ev"><span>${esc(h.texto)}</span><small>${esc(h.autor)} · ${timeLabel(h.time)} · ${fmtDT(h.created_at)}</small></div>`
+    : `<div class="msg ${h.time === 'FIN' ? 'fin' : 'sac'}"><div class="mh"><b>${esc(h.autor)}</b> <span class="tm">${timeLabel(h.time)}</span><small>${fmtDT(h.created_at)}</small></div><div class="mb">${esc(h.texto)}</div></div>`
+  ).join('');
+
+  $('#dBody').innerHTML = `
+    <div class="info">
+      ${linha('Tipo', esc(c.tipo))}
+      ${linha('Abertura', `${fmtDT(c.created_at)}<div class="sub">por ${esc(c.aberto_por) || '-'}</div>`)}
+      ${linha('Cliente', esc(c.cliente_nome))}
+      ${linha('Telefone', c.telefone ? esc(maskTel(c.telefone)) + copyBtn(c.telefone) : '')}
+      ${linha('CPF / CNPJ', doc)}
+      ${linha('Código do cliente', c.codigo_cliente ? esc(c.codigo_cliente) + copyBtn(c.codigo_cliente) : '')}
+      ${linha('Notas fiscais', nfs, 'full')}
+      ${linha('SLA', `${c.sla_horas}h <span class="sub">(semáforo na etapa 3)</span>`)}
+      ${linha('Em andamento por', c.em_andamento_por ? `${esc(c.em_andamento_por)}<div class="sub">${fmtDT(c.em_andamento_em)}</div>` : '')}
+      ${c.observacao ? `<div class="full"><div class="k">Observação</div><div class="obs">${esc(c.observacao)}</div></div>` : ''}
+      ${extra}
+    </div>
+    <div class="acts">${acoes(c).map(([l, cls, act]) => `<button class="btn ${cls}" data-act="${act}">${l}</button>`).join('')}</div>
+    <h4>Anexos (${S.anexos.length})</h4>
+    ${S.anexos.length ? `<div class="anexos">${S.anexos.map(a => `<div class="anx">
+        <span class="ic ${a.tipo_mime === 'application/pdf' ? '' : 'img'}">${a.tipo_mime === 'application/pdf' ? 'PDF' : 'IMG'}</span>
+        <div class="anx-i"><div class="anx-n" title="${esc(a.nome_arquivo)}">${esc(a.nome_arquivo)}</div>
+        <div class="sub">${fmtSize(a.tamanho || 0)} · ${esc(a.autor)} · ${timeLabel(a.time)} · ${fmtDT(a.created_at)}</div></div>
+        <button class="btn" data-dl="${a.id}">Baixar</button></div>`).join('')}</div>`
+      : `<div class="sub" style="margin-bottom:18px">${final ? 'Nenhum anexo.' : 'Nenhum anexo. Use o 📎 abaixo para anexar.'}</div>`}
+    <h4>Histórico</h4>
+    ${hist || '<div class="sub">Sem registros</div>'}`;
+  $('#composer').style.display = final ? 'none' : '';
+  const db = $('#dBody'); db.scrollTop = db.scrollHeight;
+}
+
+// Muda status com trava de concorrência e registra no histórico
+async function mudarStatus(novo, fields, texto, msg, n){
+  const c = S.open;
+  const { data, error } = await sb.from(T('chamados')).update({ status: novo, ...fields }).eq('id', c.id).eq('status', c.status).select();
+  if(error){ err(error); return false; }
+  if(!data.length){ toast('Este chamado foi alterado por outra pessoa. Atualizando…', 'bad'); await openDetail(c.id); return false; }
+  const regs = [];
+  if(msg) regs.push({ chamado_id: c.id, autor: n, time: S.tab, tipo: 'mensagem', texto: msg });
+  regs.push({ chamado_id: c.id, autor: n, time: S.tab, tipo: 'status', texto });
+  const r = await sb.from(T('historico')).insert(regs);
+  if(r.error) err(r.error);
+  await openDetail(c.id);
+  if(!$('#drawer').classList.contains('show')){ renderDetail(); showDrawer(); }
+  return true;
+}
+
+const now = () => new Date().toISOString();
+const ACOES = {
+  async assumir(){
+    const r = await ask({ title:'Assumir chamado', label:'Quem do Financeiro está assumindo este chamado?', field:'none', pessoas:'FIN', okLabel:'Assumir' });
+    if(r) mudarStatus('Em andamento', { em_andamento_em: now(), em_andamento_por: r.nome }, 'Chamado em andamento', null, r.nome);
+  },
+  async devolver(){
+    const r = await ask({ title:'Devolver ao SAC', label:'Devolutiva para o SAC: o que foi feito e o que enviar ao cliente.', required:true, pessoas:'FIN', okLabel:'Devolver' });
+    if(r) mudarStatus('Devolvido', { devolvido_em: now(), devolvido_por: r.nome }, 'Devolvido ao SAC', r.texto, r.nome);
+  },
+  async aguardar(){
+    const r = await ask({ title:'Aguardando SAC/cliente', label:'O que o Financeiro está aguardando?', required:true, pessoas:'FIN' });
+    if(r) mudarStatus('Aguardando', {}, 'Aguardando SAC/cliente', r.texto, r.nome);
+  },
+  async retomar(){
+    const r = await ask({ title:'Retomar atendimento', field:'none', pessoas:'FIN', okLabel:'Retomar' });
+    if(r) mudarStatus('Em andamento', {}, 'Atendimento retomado', null, r.nome);
+  },
+  async finalizar(){
+    const r = await ask({ title:'Finalizar chamado', label:'Confirma que a devolutiva foi enviada ao cliente? Observação final (opcional):', pessoas:'SAC', okLabel:'Finalizar' });
+    if(r) mudarStatus('Finalizado', { finalizado_em: now(), finalizado_por: r.nome }, 'Chamado finalizado', r.texto || null, r.nome);
+  },
+  async reenviar(){
+    const r = await ask({ title:'Reenviar ao Financeiro', label:'O que ainda precisa ser resolvido?', required:true, pessoas:'SAC', okLabel:'Reenviar' });
+    if(r) mudarStatus('Em andamento', {}, 'Reenviado ao Financeiro', r.texto, r.nome);
+  },
+  async cancelar(){
+    const r = await ask({ title:'Cancelar chamado', label:'Motivo do cancelamento (obrigatório):', required:true, pessoas:'SAC', okLabel:'Cancelar chamado', danger:true });
+    if(r) mudarStatus('Cancelado', { cancelado_em: now(), cancelado_por: r.nome, motivo_cancelamento: r.texto }, 'Chamado cancelado', null, r.nome);
+  }
+};
+$('#dBody').onclick = e => {
+  const d = e.target.closest('[data-dl]'); if(d) return baixarAnexo(+d.dataset.dl);
+  const b = e.target.closest('[data-act]'); if(b) ACOES[b.dataset.act]();
+};
+
+async function enviarMsg(){
+  const t = $('#msg').value.trim(); if(!t){ $('#msg').focus(); return; }
+  const n = pegaNome($('#msgWho')); if(!n) return;
+  $('#btnMsg').disabled = true;
+  const { error } = await sb.from(T('historico')).insert({ chamado_id: S.open.id, autor: n, time: S.tab, tipo: 'mensagem', texto: t });
+  $('#btnMsg').disabled = false;
+  if(error) return err(error);
+  $('#msg').value = '';
+  openDetail(S.open.id);
+}
+$('#btnMsg').onclick = enviarMsg;
+$('#msg').onkeydown = e => { if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviarMsg(); };
+
+function showDrawer(){ $('#drawer').classList.add('show'); $('#ov').classList.add('show'); }
+function closeDrawer(){ $('#drawer').classList.remove('show'); $('#ov').classList.remove('show'); S.open = null; }
+$('#dClose').onclick = closeDrawer; $('#ov').onclick = closeDrawer;
+
+// copiar
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy]'); if(!b) return;
+  e.stopPropagation();
+  navigator.clipboard.writeText(b.dataset.copy).then(() => toast('Copiado: ' + b.dataset.copy, 'ok'));
+}, true);
+
+// ---------- novo chamado ----------
+const NF = { list: [] };
+function renderNf(){ $('#nfChips').innerHTML = NF.list.map((v,i) => `<span class="chip">${esc(v)}<button data-rm="${i}" title="Remover">×</button></span>`).join(''); }
+function addNfFromInput(){
+  $('#nNf').value.split(/[,;\s]+/).map(s => s.replace(/[^\w.\-\/]/g,'')).filter(Boolean)
+    .forEach(v => { if(!NF.list.includes(v)) NF.list.push(v); });
+  $('#nNf').value = ''; renderNf();
+}
+$('#nNf').onkeydown = e => { if(e.key === 'Enter' || e.key === ','){ e.preventDefault(); addNfFromInput(); } };
+$('#nNf').onblur = addNfFromInput;
+$('#nfChips').onclick = e => { const b = e.target.closest('[data-rm]'); if(b){ NF.list.splice(+b.dataset.rm, 1); renderNf(); } };
+$('#nTel').oninput = e => e.target.value = maskTel(e.target.value);
+$('#nDoc').oninput = e => { e.target.value = maskDoc(e.target.value); $('#nDocHint').textContent=''; $('#nDocHint').className='hint'; e.target.classList.remove('invalid'); };
+$('#nDoc').onblur = () => {
+  const d = dig($('#nDoc').value);
+  if(d && !docValido(d)){ $('#nDocHint').textContent = 'CPF/CNPJ inválido'; $('#nDocHint').className = 'hint bad'; $('#nDoc').classList.add('invalid'); }
+};
+$('#nTipo').onchange = () => { $('#nObsHint').textContent = $('#nTipo').value === 'Outros assuntos' ? 'Obrigatória para Outros assuntos' : ''; };
+
+function abrirNovo(){
+  fillWho($('#nWho'), 'SAC', false); $('#nWho').classList.remove('invalid');
+  ['#nNome','#nTel','#nDoc','#nCod','#nNf','#nObs'].forEach(s => { $(s).value=''; $(s).classList.remove('invalid'); });
+  $('#nTipo').value=''; $('#nFiles').value=''; $('#nDocHint').textContent=''; $('#nObsHint').textContent=''; NF.list = []; renderNf();
+  $('#novoModal').classList.add('show'); setTimeout(() => $('#nNome').focus(), 50);
+}
+$('#btnNovo').onclick = abrirNovo;
+$('#nCancel').onclick = () => $('#novoModal').classList.remove('show');
+
+async function buscarDuplicados(doc, nfs){
+  const base = () => sb.from(T('chamados')).select('id,protocolo,tipo,status,created_at').not('status','in','("Finalizado","Cancelado")').limit(10);
+  const res = [];
+  if(doc){ const { data } = await base().eq('documento', doc); if(data) res.push(...data); }
+  if(nfs.length){ const { data } = await base().overlaps('nfs', nfs); if(data) res.push(...data); }
+  const vistos = new Set();
+  return res.filter(r => !vistos.has(r.id) && vistos.add(r.id));
+}
+
+$('#nSalvar').onclick = async () => {
+  const n = pegaNome($('#nWho')); if(!n) return;
+  addNfFromInput();
+  const doc = dig($('#nDoc').value), tipo = $('#nTipo').value, obs = $('#nObs').value.trim();
+  if(doc && !docValido(doc)){ $('#nDoc').classList.add('invalid'); $('#nDocHint').textContent='CPF/CNPJ inválido'; $('#nDocHint').className='hint bad'; $('#nDoc').focus(); return; }
+  if(tipo === 'Outros assuntos' && !obs){ $('#nObs').classList.add('invalid'); $('#nObsHint').className='hint bad'; $('#nObs').focus(); return; }
+  const arquivos = [...$('#nFiles').files];
+  if(arquivos.length && !validaArquivos(arquivos)) return;
+
+  const btn = $('#nSalvar'); btn.disabled = true;
+  const dups = await buscarDuplicados(doc, NF.list);
+  if(dups.length){
+    $('#novoModal').classList.remove('show');
+    const ok = await ask({
+      title:'Possível duplicidade', field:'none', okLabel:'Abrir mesmo assim',
+      label:`Já existe chamado ativo para este CPF/CNPJ ou NF:<ul>${dups.map(d => `<li><b>${esc(d.protocolo)}</b> · ${esc(d.tipo || 'sem tipo')} · ${esc(statusLabel(d.status))} · ${fmtDT(d.created_at)}</li>`).join('')}</ul>Deseja abrir um novo mesmo assim?`
+    });
+    if(ok === null){ $('#novoModal').classList.add('show'); btn.disabled = false; return; }
+  }
+
+  const { data, error } = await sb.from(T('chamados')).insert({
+    aberto_por: n,
+    cliente_nome: $('#nNome').value.trim() || null,
+    telefone: dig($('#nTel').value) || null,
+    documento: doc || null,
+    codigo_cliente: $('#nCod').value.trim() || null,
+    nfs: NF.list,
+    tipo: tipo || null,
+    observacao: obs || null
+  }).select().single();
+  btn.disabled = false;
+  if(error){ $('#novoModal').classList.add('show'); return err(error); }
+  await sb.from(T('historico')).insert({ chamado_id: data.id, autor: n, time: 'SAC', tipo: 'status', texto: 'Chamado aberto' });
+  if(arquivos.length){ toast('Enviando anexos…'); await subirAnexos(data.id, arquivos, n, 'SAC'); }
+  $('#novoModal').classList.remove('show');
+  toast(`Chamado ${data.protocolo} aberto`, 'ok');
+  await load();
+  openDetail(data.id);
+};
+
+// Esc fecha o que estiver aberto
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if($('#askModal').classList.contains('show')) $('#askCancel').click();
+  else if($('#novoModal').classList.contains('show')) $('#novoModal').classList.remove('show');
+  else if($('#drawer').classList.contains('show')) closeDrawer();
+});
+
+// ---------- início ----------
+(function init(){
+  $('#env').textContent = CONFIG.AMBIENTE; $('#env').style.display = CONFIG.AMBIENTE ? '' : 'none';
+  $('#fStatus').innerHTML = `<option value="ativos">Ativos</option><option value="">Todos</option>` + STATUS.map(s => `<option value="${s}">${esc(statusLabel(s))}</option>`).join('');
+  $('#fTipo').innerHTML = `<option value="">Todos</option>` + TIPOS.map(t => `<option>${esc(t)}</option>`).join('');
+  $('#nTipo').innerHTML = `<option value="">Selecione…</option>` + TIPOS.map(t => `<option>${esc(t)}</option>`).join('');
+  $('#fAberto').innerHTML = `<option value="">Todos</option>`;
+  setTab(S.tab);
+  if(!configurado){ $('#cfgwarn').style.display = 'block'; $('#rows').innerHTML = `<tr><td colspan="9" class="empty">Aguardando configuração</td></tr>`; return; }
+  loadPessoas(); load();
+})();
+</script>
+</body>
+</html>
