@@ -480,7 +480,8 @@ function acoes(c){
     if(c.status === 'Em andamento'){ a.push(['Devolver ao SAC','pri','devolver']); a.push(['Aguardando SAC/cliente','','aguardar']); }
     if(c.status === 'Aguardando') a.push(['Retomar atendimento','pri','retomar']);
   } else {
-    if(c.status === 'Devolvido'){ a.push(['Finalizar chamado','pri','finalizar']); a.push(['Reenviar ao Financeiro','','reenviar']); }
+    if(c.status === 'Aguardando') a.push(['Devolver ao Financeiro','pri','responder']);
+    if(c.status === 'Devolvido'){ a.push(['Finalizar chamado','pri','finalizar']); a.push(['Devolver ao Financeiro','','reenviar']); }
     if(!FINAIS.includes(c.status)) a.push(['Cancelar chamado','danger','cancelar']);
   }
   return a;
@@ -567,9 +568,13 @@ const ACOES = {
     const r = await ask({ title:'Finalizar chamado', label:'Confirma que a devolutiva foi enviada ao cliente? Observação final (opcional):', pessoas:'SAC', okLabel:'Finalizar' });
     if(r) mudarStatus('Finalizado', { finalizado_em: now(), finalizado_por: r.nome }, 'Chamado finalizado', r.texto || null, r.nome);
   },
+  async responder(){
+    const r = await ask({ title:'Devolver ao Financeiro', label:'Resposta do SAC/cliente para o Financeiro continuar.<div class="sub">Se precisar enviar arquivo, anexe pelo 📎 antes de devolver.</div>', required:true, pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
+    if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro com resposta do SAC', r.texto, r.nome);
+  },
   async reenviar(){
-    const r = await ask({ title:'Reenviar ao Financeiro', label:'O que ainda precisa ser resolvido?', required:true, pessoas:'SAC', okLabel:'Reenviar' });
-    if(r) mudarStatus('Em andamento', {}, 'Reenviado ao Financeiro', r.texto, r.nome);
+    const r = await ask({ title:'Devolver ao Financeiro', label:'O que ainda precisa ser resolvido pelo Financeiro?<div class="sub">Se precisar enviar arquivo, anexe pelo 📎 antes de devolver.</div>', required:true, pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
+    if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro', r.texto, r.nome);
   },
   async cancelar(){
     const r = await ask({ title:'Cancelar chamado', label:'Motivo do cancelamento (obrigatório):', required:true, pessoas:'SAC', okLabel:'Cancelar chamado', danger:true });
