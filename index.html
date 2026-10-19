@@ -58,6 +58,17 @@ td.mono b{color:var(--roxo-light)}
 .st-finalizado{background:rgba(100,100,120,.2);color:#C7C3E0;border-color:rgba(100,100,120,.4)}
 .st-cancelado{background:transparent;color:var(--dim);border-color:rgba(100,100,120,.3);text-decoration:line-through}
 .more{display:block;margin:14px auto}
+.sla{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.sla i{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.sla-ok{background:rgba(16,185,129,.12);color:#6EE7B7;border-color:rgba(16,185,129,.4)}.sla-ok i{background:var(--ok)}
+.sla-warn{background:rgba(245,158,11,.12);color:#FCD34D;border-color:rgba(245,158,11,.45)}.sla-warn i{background:var(--amber)}
+.sla-late{background:rgba(239,68,68,.12);color:#FCA5A5;border-color:rgba(239,68,68,.45)}.sla-late i{background:var(--bad)}
+.sla-pause{background:transparent;color:var(--mute);border:1px dashed var(--dim)}
+.sla-end{background:rgba(100,100,120,.15);color:#C7C3E0;border-color:rgba(100,100,120,.35)}
+.sla-endbad{background:rgba(100,100,120,.15);color:#FCA5A5;border-color:rgba(239,68,68,.3)}
+.sla-x{color:var(--dim)}
+.box .f input[type=date]{width:100%}
+.grid2.dates{margin-top:6px}
 .cp{border:0;background:none;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 4px;border-radius:4px;transition:all .15s}
 .cp:hover{color:var(--roxo-light);background:rgba(124,58,237,.1)}
 /* drawer */
@@ -147,15 +158,20 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
     <div class="f"><label>Aberto por</label><select id="fAberto"></select></div>
     <div class="f"><label>De</label><input type="date" id="fDe"></div>
     <div class="f"><label>Até</label><input type="date" id="fAte"></div>
+    <div class="f"><label>SLA</label><select id="fSla">
+      <option value="">Todos</option><option value="noprazo">🟢 No prazo</option><option value="vencendo">🟡 Vencendo</option><option value="atrasado">🔴 Atrasado</option><option value="pausado">⏸ Pausado</option><option value="fim_ok">✔ Encerrado no prazo</option><option value="fim_fora">✖ Encerrado fora do prazo</option>
+    </select></div>
+    <div class="f"><label>Ordenar</label><select id="fOrdem"><option value="urgencia">Mais urgentes</option><option value="recentes">Mais recentes</option></select></div>
     <button class="btn" id="btnLimpar">Limpar</button>
     <div class="spacer"></div>
+    <button class="btn" id="btnCsv">⬇ Baixar CSV</button>
     <button class="btn pri" id="btnNovo">+ Novo chamado</button>
   </div>
 
   <div class="count" id="count"></div>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Protocolo</th><th>Abertura</th><th>Cliente</th><th>CPF / CNPJ</th><th>Código</th><th>NFs</th><th>Tipo</th><th>Status</th><th>Aberto por</th></tr></thead>
+      <thead><tr><th>Protocolo</th><th>Abertura</th><th>Cliente</th><th>CPF / CNPJ</th><th>Código</th><th>NFs</th><th>Tipo</th><th>Status</th><th>SLA</th><th>Aberto por</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
@@ -168,7 +184,7 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
   <div class="db" id="dBody"></div>
   <div class="composer" id="composer">
     <select id="msgWho" title="Seu nome"></select>
-    <textarea id="msg" placeholder="Escreva uma mensagem (Ctrl+Enter envia)"></textarea>
+    <textarea id="msg" placeholder="Escreva aqui as informações para o outro setor (Ctrl+Enter envia)"></textarea>
     <button class="btn clip" id="btnAnexo" title="Anexar arquivo (PDF ou imagem, até 10 MB)">📎</button>
     <input type="file" id="fileIn" multiple accept=".pdf,image/png,image/jpeg,image/webp" hidden>
     <button class="btn pri" id="btnMsg">Enviar</button>
@@ -191,6 +207,19 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
       <div class="f full"><label>Anexos (PDF ou imagem, até 10 MB cada)</label><input type="file" id="nFiles" multiple accept=".pdf,image/png,image/jpeg,image/webp"></div>
     </div>
     <div class="foot"><button class="btn" id="nCancel">Cancelar</button><button class="btn pri" id="nSalvar">Abrir chamado</button></div>
+  </div>
+</div>
+
+<!-- Exportar CSV -->
+<div class="modal" id="csvModal">
+  <div class="box">
+    <h3>Baixar CSV</h3>
+    <div class="sub">Deixe as datas em branco para baixar todos os chamados. A data considerada é a de abertura.</div>
+    <div class="grid2 dates">
+      <div class="f"><label>De</label><input type="date" id="csvDe"></div>
+      <div class="f"><label>Até</label><input type="date" id="csvAte"></div>
+    </div>
+    <div class="foot"><button class="btn" id="csvCancel">Voltar</button><button class="btn pri" id="csvOk">Baixar</button></div>
   </div>
 </div>
 
@@ -241,7 +270,7 @@ const copyBtn = v => v ? `<button class="cp" data-copy="${esc(v)}" title="Copiar
 const configurado = !CONFIG.SUPABASE_URL.includes('COLE_');
 const sb = configurado ? supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY) : null;
 
-const S = { tab: ls.get('fin_tab') === 'FIN' ? 'FIN' : 'SAC', pessoas: [], rows: [], total: 0, page: 0, loading: false, open: null, hist: [], anexos: [] };
+const S = { tab: ls.get('fin_tab') === 'FIN' ? 'FIN' : 'SAC', pessoas: [], rows: [], total: 0, page: 0, loading: false, open: null, hist: [], anexos: [], all: [], shown: 30, seq: 0 };
 
 // ---------- utilidades ----------
 function fmtDT(iso){
@@ -353,9 +382,62 @@ function setTab(t){
 }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 
+// ---------- SLA ----------
+// Horas corridas, sem sábado e domingo, no horário de Brasília (UTC-3)
+const BRT = 3 * 3600e3, DIA = 86400e3;
+const CORRENDO = ['Aberto','Em andamento'];
+function bizMs(a, b){
+  if(!(b > a)) return 0;
+  let s = a - BRT; const e = b - BRT; let tot = 0;
+  while(s < e){
+    const fim = Math.min((Math.floor(s / DIA) + 1) * DIA, e);
+    const dow = new Date(s).getUTCDay();
+    if(dow !== 0 && dow !== 6) tot += fim - s;
+    s = fim;
+  }
+  return tot;
+}
+function addBiz(a, ms){                    // data/hora em que "ms" úteis terminam
+  let s = a - BRT;
+  while(ms > 0){
+    const fimDia = (Math.floor(s / DIA) + 1) * DIA, dow = new Date(s).getUTCDay();
+    if(dow === 0 || dow === 6){ s = fimDia; continue; }
+    const d = Math.min(fimDia - s, ms); s += d; ms -= d;
+  }
+  return s + BRT;
+}
+function fmtDur(sec){
+  sec = Math.max(0, Math.round(sec));
+  if(sec < 3600) return Math.max(1, Math.round(sec / 60)) + 'min';
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
+  if(h >= 48) return `${Math.floor(h / 24)}d ${h % 24}h`;
+  return h + 'h' + (m ? String(m).padStart(2, '0') : '');
+}
+// cat: noprazo | vencendo | atrasado | pausado | fim_ok | fim_fora | cancelado
+function slaInfo(c){
+  const total = (c.sla_horas || 24) * 3600;
+  let cons = Number(c.sla_consumido_seg || 0);
+  const corre = CORRENDO.includes(c.status) && c.sla_desde;
+  if(corre) cons += bizMs(Date.parse(c.sla_desde), Date.now()) / 1000;
+  const resta = total - cons, pct = cons / total;
+  const r = { cons, resta, pct, total, vence: null };
+  if(c.status === 'Cancelado') return { ...r, cat:'cancelado', cls:'sla-x', txt:'Cancelado', ord: 9 };
+  if(c.status === 'Devolvido' || c.status === 'Finalizado')
+    return resta >= 0 ? { ...r, cat:'fim_ok', cls:'sla-end', txt:`✔ no prazo (${fmtDur(cons)})`, ord: 8 }
+                      : { ...r, cat:'fim_fora', cls:'sla-endbad', txt:`✖ fora do prazo (+${fmtDur(-resta)})`, ord: 8 };
+  const quanto = resta >= 0 ? 'faltam ' + fmtDur(resta) : 'atrasado ' + fmtDur(-resta);
+  if(c.status === 'Aguardando') return { ...r, cat:'pausado', cls:'sla-pause', txt:'⏸ pausado · ' + quanto, ord: 5 };
+  if(resta > 0) r.vence = addBiz(Date.now(), resta * 1000);
+  if(pct > 1) return { ...r, cat:'atrasado', cls:'sla-late', txt: quanto, dot: true, ord: 1 };
+  if(pct >= 0.8) return { ...r, cat:'vencendo', cls:'sla-warn', txt: quanto, dot: true, ord: 2 };
+  return { ...r, cat:'noprazo', cls:'sla-ok', txt: quanto, dot: true, ord: 3 };
+}
+const SLA_NOME = { noprazo:'No prazo', vencendo:'Vencendo', atrasado:'Atrasado', pausado:'Pausado', fim_ok:'Encerrado no prazo', fim_fora:'Encerrado fora do prazo', cancelado:'Cancelado' };
+const slaBadge = i => i.cat === 'cancelado' ? '<span class="sla-x">-</span>' : `<span class="sla ${i.cls}">${i.dot ? '<i></i>' : ''}${esc(i.txt)}</span>`;
+
 // ---------- lista ----------
 function buildQuery(){
-  let q = sb.from(T('chamados')).select('*', { count:'exact' }).order('created_at', { ascending:false });
+  let q = sb.from(T('chamados')).select('*').order('created_at', { ascending:false }).order('id', { ascending:false });
   const st = $('#fStatus').value;
   if(st === 'ativos') q = q.not('status', 'in', '("Finalizado","Cancelado")');
   else if(st) q = q.eq('status', st);
@@ -372,21 +454,40 @@ function buildQuery(){
   }
   return q;
 }
-async function load(reset = true){
-  if(!sb || S.loading) return;
-  S.loading = true;
-  if(reset){ S.page = 0; S.rows = []; }
-  const from = S.page * PAGE;
-  const { data, error, count } = await buildQuery().range(from, from + PAGE - 1);
-  S.loading = false;
-  if(error) return err(error);
-  S.rows = S.rows.concat(data); S.total = count || 0; S.page++;
-  renderList();
+async function fetchAll(q){
+  const out = [];
+  for(let from = 0; ; from += 1000){
+    const { data, error } = await q().range(from, from + 999);
+    if(error) throw error;
+    out.push(...data);
+    if(data.length < 1000) return out;
+  }
+}
+async function load(){
+  if(!sb) return;
+  const seq = ++S.seq;
+  try {
+    const data = await fetchAll(buildQuery);
+    if(seq !== S.seq) return;          // uma busca mais nova já chegou
+    S.all = data; S.shown = PAGE;
+    renderList();
+  } catch(e){ err(e); }
+}
+function visiveis(){
+  const f = $('#fSla').value;
+  let rows = S.all.map(r => ({ r, s: slaInfo(r) }));
+  if(f) rows = rows.filter(x => x.s.cat === f);
+  if($('#fOrdem').value === 'urgencia')
+    rows.sort((a, b) => a.s.ord - b.s.ord || (a.s.ord <= 3 ? a.s.resta - b.s.resta : Date.parse(b.r.created_at) - Date.parse(a.r.created_at)));
+  return rows;
 }
 function renderList(){
+  const lista = visiveis();
+  S.rows = lista.slice(0, S.shown);
+  S.total = lista.length;
   $('#rows').innerHTML = !S.rows.length
-    ? `<tr><td colspan="9" class="empty">Nenhum chamado encontrado</td></tr>`
-    : S.rows.map(r => `<tr data-id="${r.id}">
+    ? `<tr><td colspan="10" class="empty">Nenhum chamado encontrado</td></tr>`
+    : S.rows.map(({ r, s }) => `<tr data-id="${r.id}">
         <td class="mono nw"><b>${esc(r.protocolo)}</b>${copyBtn(r.protocolo)}</td>
         <td class="nw">${fmtDT(r.created_at)}</td>
         <td>${esc(r.cliente_nome) || '<span class="sub">-</span>'}</td>
@@ -395,17 +496,20 @@ function renderList(){
         <td>${(r.nfs || []).length ? r.nfs.map(n => `<span class="nw">${esc(n)}${copyBtn(n)}</span>`).join(' ') : '<span class="sub">-</span>'}</td>
         <td>${esc(r.tipo)}</td>
         <td>${badge(r.status)}</td>
+        <td>${slaBadge(s)}</td>
         <td>${esc(r.aberto_por)}</td></tr>`).join('');
   $('#count').textContent = S.total ? `${S.rows.length} de ${S.total} chamados` : '';
   $('#more').style.display = S.rows.length < S.total ? '' : 'none';
 }
 $('#rows').onclick = e => { const tr = e.target.closest('tr[data-id]'); if(tr) openDetail(+tr.dataset.id, true); };
-$('#more').onclick = () => load(false);
+$('#more').onclick = () => { S.shown += PAGE; renderList(); };
+$('#fSla').onchange = $('#fOrdem').onchange = () => { S.shown = PAGE; renderList(); };
+setInterval(() => { if(S.all.length) renderList(); if(S.open && $('#drawer').classList.contains('show')) atualizaSlaDetalhe(); }, 60000);
 
 let buscaT;
 $('#fBusca').oninput = () => { clearTimeout(buscaT); buscaT = setTimeout(load, 400); };
 ['#fStatus','#fTipo','#fAberto','#fDe','#fAte'].forEach(s => $(s).onchange = () => load());
-$('#btnLimpar').onclick = () => { $('#fBusca').value=''; $('#fStatus').value='ativos'; $('#fTipo').value=''; $('#fAberto').value=''; $('#fDe').value=''; $('#fAte').value=''; load(); };
+$('#btnLimpar').onclick = () => { $('#fBusca').value=''; $('#fStatus').value='ativos'; $('#fTipo').value=''; $('#fAberto').value=''; $('#fDe').value=''; $('#fAte').value=''; $('#fSla').value=''; $('#fOrdem').value='urgencia'; load(); };
 
 // ---------- anexos ----------
 const BUCKET = 'fin-anexos';
@@ -465,8 +569,8 @@ async function openDetail(id, doClique = false){
   if(r1.error || r2.error) return err(r1.error || r2.error);
   if(r3.error) err(r3.error);
   S.open = r1.data; S.hist = r2.data; S.anexos = r3.data || [];
-  const i = S.rows.findIndex(r => r.id === id);
-  if(i >= 0){ S.rows[i] = r1.data; renderList(); }
+  const i = S.all.findIndex(r => r.id === id);
+  if(i >= 0){ S.all[i] = r1.data; renderList(); }
 
   renderDetail(); showDrawer();
   // Financeiro abriu um chamado novo: pergunta quem assume e passa para Em andamento
@@ -477,7 +581,7 @@ function acoes(c){
   const a = [];
   if(S.tab === 'FIN'){
     if(c.status === 'Aberto') a.push(['Assumir chamado','pri','assumir']);
-    if(c.status === 'Em andamento'){ a.push(['Devolver ao SAC','pri','devolver']); a.push(['Aguardando SAC/cliente','','aguardar']); }
+    if(c.status === 'Em andamento'){ a.push(['Demanda resolvida','pri','devolver']); a.push(['Aguardando SAC/cliente','','aguardar']); }
     if(c.status === 'Aguardando') a.push(['Retomar atendimento','pri','retomar']);
   } else {
     if(c.status === 'Aguardando') a.push(['Devolver ao Financeiro','pri','responder']);
@@ -511,7 +615,7 @@ function renderDetail(){
       ${linha('CPF / CNPJ', doc)}
       ${linha('Código do cliente', c.codigo_cliente ? esc(c.codigo_cliente) + copyBtn(c.codigo_cliente) : '')}
       ${linha('Notas fiscais', nfs, 'full')}
-      ${linha('SLA', `${c.sla_horas}h <span class="sub">(semáforo na etapa 3)</span>`)}
+      <div><div class="k">SLA (${c.sla_horas}h)</div><div class="v" id="slaDet"></div></div>
       ${linha('Em andamento por', c.em_andamento_por ? `${esc(c.em_andamento_por)}<div class="sub">${fmtDT(c.em_andamento_em)}</div>` : '')}
       ${c.observacao ? `<div class="full"><div class="k">Observação</div><div class="obs">${esc(c.observacao)}</div></div>` : ''}
       ${extra}
@@ -527,7 +631,13 @@ function renderDetail(){
     <h4>Histórico</h4>
     ${hist || '<div class="sub">Sem registros</div>'}`;
   $('#composer').style.display = final ? 'none' : '';
+  atualizaSlaDetalhe();
   const db = $('#dBody'); db.scrollTop = db.scrollHeight;
+}
+function atualizaSlaDetalhe(){
+  const el = $('#slaDet'); if(!el || !S.open) return;
+  const i = slaInfo(S.open);
+  el.innerHTML = slaBadge(i) + (i.vence ? `<div class="sub">vence ${fmtDT(new Date(i.vence).toISOString())}</div>` : '');
 }
 
 // Muda status com trava de concorrência e registra no histórico
@@ -553,28 +663,28 @@ const ACOES = {
     if(r) mudarStatus('Em andamento', { em_andamento_em: now(), em_andamento_por: r.nome }, 'Chamado em andamento', null, r.nome);
   },
   async devolver(){
-    const r = await ask({ title:'Devolver ao SAC', label:'Devolutiva para o SAC: o que foi feito e o que enviar ao cliente.', required:true, pessoas:'FIN', okLabel:'Devolver' });
-    if(r) mudarStatus('Devolvido', { devolvido_em: now(), devolvido_por: r.nome }, 'Devolvido ao SAC', r.texto, r.nome);
+    const r = await ask({ title:'Demanda resolvida', label:'O chamado volta para o SAC enviar a devolutiva ao cliente. As informações ficam no chat do chamado.', field:'none', pessoas:'FIN', okLabel:'Devolver ao SAC' });
+    if(r) mudarStatus('Devolvido', { devolvido_em: now(), devolvido_por: r.nome }, 'Demanda resolvida · devolvido ao SAC', null, r.nome);
   },
   async aguardar(){
-    const r = await ask({ title:'Aguardando SAC/cliente', label:'O que o Financeiro está aguardando?', required:true, pessoas:'FIN' });
-    if(r) mudarStatus('Aguardando', {}, 'Aguardando SAC/cliente', r.texto, r.nome);
+    const r = await ask({ title:'Aguardando SAC/cliente', label:'O chamado vai para o SAC e o SLA fica pausado até a resposta.', field:'none', pessoas:'FIN', okLabel:'Enviar ao SAC' });
+    if(r) mudarStatus('Aguardando', {}, 'Aguardando SAC/cliente', null, r.nome);
   },
   async retomar(){
     const r = await ask({ title:'Retomar atendimento', field:'none', pessoas:'FIN', okLabel:'Retomar' });
     if(r) mudarStatus('Em andamento', {}, 'Atendimento retomado', null, r.nome);
   },
   async finalizar(){
-    const r = await ask({ title:'Finalizar chamado', label:'Confirma que a devolutiva foi enviada ao cliente? Observação final (opcional):', pessoas:'SAC', okLabel:'Finalizar' });
-    if(r) mudarStatus('Finalizado', { finalizado_em: now(), finalizado_por: r.nome }, 'Chamado finalizado', r.texto || null, r.nome);
+    const r = await ask({ title:'Finalizar chamado', label:'Confirma que a devolutiva foi enviada ao cliente?', field:'none', pessoas:'SAC', okLabel:'Finalizar' });
+    if(r) mudarStatus('Finalizado', { finalizado_em: now(), finalizado_por: r.nome }, 'Chamado finalizado', null, r.nome);
   },
   async responder(){
-    const r = await ask({ title:'Devolver ao Financeiro', label:'Resposta do SAC/cliente para o Financeiro continuar.<div class="sub">Se precisar enviar arquivo, anexe pelo 📎 antes de devolver.</div>', required:true, pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
-    if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro com resposta do SAC', r.texto, r.nome);
+    const r = await ask({ title:'Devolver ao Financeiro', label:'O chamado volta para o Financeiro e o SLA continua de onde parou.', field:'none', pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
+    if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro com resposta do SAC', null, r.nome);
   },
   async reenviar(){
-    const r = await ask({ title:'Devolver ao Financeiro', label:'O que ainda precisa ser resolvido pelo Financeiro?<div class="sub">Se precisar enviar arquivo, anexe pelo 📎 antes de devolver.</div>', required:true, pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
-    if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro', r.texto, r.nome);
+    const r = await ask({ title:'Devolver ao Financeiro', label:'O chamado volta para o Financeiro e o SLA continua de onde parou.', field:'none', pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
+    if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro', null, r.nome);
   },
   async cancelar(){
     const r = await ask({ title:'Cancelar chamado', label:'Motivo do cancelamento (obrigatório):', required:true, pessoas:'SAC', okLabel:'Cancelar chamado', danger:true });
@@ -609,6 +719,47 @@ document.addEventListener('click', e => {
   e.stopPropagation();
   navigator.clipboard.writeText(b.dataset.copy).then(() => toast('Copiado: ' + b.dataset.copy, 'ok'));
 }, true);
+
+// ---------- CSV ----------
+$('#btnCsv').onclick = () => { $('#csvModal').classList.add('show'); };
+$('#csvCancel').onclick = () => $('#csvModal').classList.remove('show');
+function csvCell(v){
+  if(v === null || v === undefined) return '';
+  const s = String(v);
+  return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+const horasBR = sec => (Math.round(sec / 360) / 10).toFixed(1).replace('.', ',');
+$('#csvOk').onclick = async () => {
+  const de = $('#csvDe').value, ate = $('#csvAte').value;
+  if(de && ate && de > ate){ toast('A data inicial é maior que a final', 'bad'); return; }
+  const btn = $('#csvOk'); btn.disabled = true;
+  try {
+    const rows = await fetchAll(() => {
+      let q = sb.from(T('chamados')).select('*').order('created_at').order('id');
+      if(de) q = q.gte('created_at', de + 'T00:00:00-03:00');
+      if(ate) q = q.lte('created_at', ate + 'T23:59:59.999-03:00');
+      return q;
+    });
+    if(!rows.length){ toast('Nenhum chamado no período', 'bad'); return; }
+    const cab = ['Protocolo','Abertura','Aberto por','Cliente','CPF/CNPJ','Código','NFs','Tipo','Observação','Status','Assumido por','Assumido em','Devolvido em','Devolvido por','Finalizado em','Finalizado por','Cancelado em','Cancelado por','Motivo do cancelamento','SLA (h)','Tempo consumido (h)','Situação do SLA'];
+    const linhas = rows.map(c => {
+      const s = slaInfo(c);
+      return [c.protocolo, fmtDT(c.created_at), c.aberto_por, c.cliente_nome, maskDoc(c.documento), c.codigo_cliente, (c.nfs || []).join(', '), c.tipo, c.observacao, statusLabel(c.status),
+        c.em_andamento_por, fmtDT(c.em_andamento_em), fmtDT(c.devolvido_em), c.devolvido_por, fmtDT(c.finalizado_em), c.finalizado_por, fmtDT(c.cancelado_em), c.cancelado_por, c.motivo_cancelamento,
+        c.sla_horas, horasBR(s.cons), SLA_NOME[s.cat]].map(csvCell).join(';');
+    });
+    const csv = '﻿' + [cab.join(';'), ...linhas].join('\r\n');
+    const sufixo = de || ate ? `_${de || 'inicio'}_a_${ate || 'hoje'}` : '_todos';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `chamados_financeiro${sufixo}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    $('#csvModal').classList.remove('show');
+    toast(`${rows.length} chamados exportados`, 'ok');
+  } catch(e){ err(e); }
+  finally { btn.disabled = false; }
+};
 
 // ---------- novo chamado ----------
 const NF = { list: [] };
@@ -691,6 +842,7 @@ $('#nSalvar').onclick = async () => {
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape') return;
   if($('#askModal').classList.contains('show')) $('#askCancel').click();
+  else if($('#csvModal').classList.contains('show')) $('#csvModal').classList.remove('show');
   else if($('#novoModal').classList.contains('show')) $('#novoModal').classList.remove('show');
   else if($('#drawer').classList.contains('show')) closeDrawer();
 });
@@ -703,7 +855,7 @@ document.addEventListener('keydown', e => {
   $('#nTipo').innerHTML = `<option value="">Selecione…</option>` + TIPOS.map(t => `<option>${esc(t)}</option>`).join('');
   $('#fAberto').innerHTML = `<option value="">Todos</option>`;
   setTab(S.tab);
-  if(!configurado){ $('#cfgwarn').style.display = 'block'; $('#rows').innerHTML = `<tr><td colspan="9" class="empty">Aguardando configuração</td></tr>`; return; }
+  if(!configurado){ $('#cfgwarn').style.display = 'block'; $('#rows').innerHTML = `<tr><td colspan="10" class="empty">Aguardando configuração</td></tr>`; return; }
   loadPessoas(); load();
 })();
 </script>
