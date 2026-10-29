@@ -247,7 +247,7 @@ const CONFIG = {
 };
 // ======================================
 
-const TIPOS = ['Prorrogação de boleto','Segunda via de boleto','Erro no pagamento','Pagar título protestado','Carta de anuência','Pagamento não baixado','Boleto não registrado','Outros assuntos'];
+let TIPOS = ['Prorrogação de boleto','Segunda via de boleto','Erro no pagamento','Pagar título protestado','Carta de anuência','Pagamento não baixado','Boleto não registrado','Outros assuntos'];
 const STATUS = ['Aberto','Em andamento','Aguardando','Devolvido','Finalizado','Cancelado'];
 const STATUS_LABEL = {Aguardando:'Aguardando SAC/cliente', Devolvido:'Devolvido ao SAC'};
 const STATUS_CLS = {'Aberto':'aberto','Em andamento':'andamento','Aguardando':'aguardando','Devolvido':'devolvido','Finalizado':'finalizado','Cancelado':'cancelado'};
@@ -335,6 +335,21 @@ function ask({title, label='', required=false, field='text', okLabel='Confirmar'
     };
     $('#askCancel').onclick = () => done(null);
   });
+}
+
+// ---------- tipos de demanda (lidos da tabela de SLA) ----------
+function renderTipos(){
+  const f = $('#fTipo').value, n = $('#nTipo').value;
+  $('#fTipo').innerHTML = `<option value="">Todos</option>` + TIPOS.map(t => `<option ${t === f ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  $('#nTipo').innerHTML = `<option value="">Selecione…</option>` + TIPOS.map(t => `<option ${t === n ? 'selected' : ''}>${esc(t)}</option>`).join('');
+}
+async function loadTipos(){
+  const { data, error } = await sb.from(T('sla')).select('tipo');
+  if(error || !data || !data.length) return;           // mantém a lista padrão
+  const nomes = data.map(r => String(r.tipo || '').trim()).filter(Boolean);
+  TIPOS = nomes.filter(t => t !== 'Outros assuntos').sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  if(nomes.includes('Outros assuntos')) TIPOS.push('Outros assuntos');
+  renderTipos();
 }
 
 // ---------- pessoas (nome escolhido no momento da ação) ----------
@@ -851,12 +866,11 @@ document.addEventListener('keydown', e => {
 (function init(){
   $('#env').textContent = CONFIG.AMBIENTE; $('#env').style.display = CONFIG.AMBIENTE ? '' : 'none';
   $('#fStatus').innerHTML = `<option value="ativos">Ativos</option><option value="">Todos</option>` + STATUS.map(s => `<option value="${s}">${esc(statusLabel(s))}</option>`).join('');
-  $('#fTipo').innerHTML = `<option value="">Todos</option>` + TIPOS.map(t => `<option>${esc(t)}</option>`).join('');
-  $('#nTipo').innerHTML = `<option value="">Selecione…</option>` + TIPOS.map(t => `<option>${esc(t)}</option>`).join('');
+  renderTipos();
   $('#fAberto').innerHTML = `<option value="">Todos</option>`;
   setTab(S.tab);
   if(!configurado){ $('#cfgwarn').style.display = 'block'; $('#rows').innerHTML = `<tr><td colspan="10" class="empty">Aguardando configuração</td></tr>`; return; }
-  loadPessoas(); load();
+  loadPessoas(); loadTipos(); load();
 })();
 </script>
 </body>
