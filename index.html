@@ -45,6 +45,14 @@ table{width:100%;border-collapse:collapse;min-width:1100px}
 th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--mute);padding:12px 14px;border-bottom:1px solid var(--line);background:var(--card2);letter-spacing:.05em}
 td{padding:12px 14px;border-bottom:1px solid rgba(61,54,96,.5);vertical-align:top}
 tbody tr{cursor:pointer;transition:background .15s}
+tbody tr.urg{background:rgba(239,68,68,.07)}
+tbody tr.urg:hover{background:rgba(239,68,68,.13)}
+tbody tr.urg td:first-child{box-shadow:inset 4px 0 0 var(--bad)}
+.urgtag{display:inline-block;background:var(--bad);color:#fff;font:800 10px 'Inter',sans-serif;letter-spacing:.08em;padding:3px 8px;border-radius:4px;vertical-align:middle}
+td .urgtag{margin-top:5px}
+.urgchk{display:flex!important;align-items:center;gap:10px;text-transform:none!important;letter-spacing:0!important;font-size:14px!important;color:var(--ink)!important;cursor:pointer;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:10px 12px}
+.grid2 .f .urgchk input{width:18px!important;height:18px;flex:0 0 18px;padding:0;margin:0;accent-color:var(--bad);cursor:pointer;box-shadow:none}
+.toast.urg{background:#3B0D12;border-color:var(--bad);color:#fff;font-weight:600}
 tbody tr:hover{background:var(--card2)}
 .sub{color:var(--mute);font-size:12px;margin-top:2px}
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
@@ -161,6 +169,7 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
     <div class="f"><label>SLA</label><select id="fSla">
       <option value="">Todos</option><option value="noprazo">🟢 No prazo</option><option value="vencendo">🟡 Vencendo</option><option value="atrasado">🔴 Atrasado</option><option value="pausado">⏸ Pausado</option><option value="fim_ok">✔ Encerrado no prazo</option><option value="fim_fora">✖ Encerrado fora do prazo</option>
     </select></div>
+    <div class="f"><label>Urgência</label><select id="fUrg"><option value="">Todos</option><option value="sim">Somente urgentes</option></select></div>
     <div class="f"><label>Ordenar</label><select id="fOrdem"><option value="urgencia">Mais urgentes</option><option value="recentes">Mais recentes</option></select></div>
     <button class="btn" id="btnLimpar">Limpar</button>
     <div class="spacer"></div>
@@ -202,6 +211,7 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
       <div class="f"><label>CPF / CNPJ</label><input id="nDoc" inputmode="numeric"><div class="hint" id="nDocHint"></div></div>
       <div class="f"><label>Código do cliente</label><input id="nCod"></div>
       <div class="f"><label>Tipo de demanda</label><select id="nTipo"></select></div>
+      <div class="f full" id="nUrgWrap" style="display:none"><label class="urgchk"><input type="checkbox" id="nUrg"><span>Marcar como <b>URGENTE</b></span></label><div class="hint" id="nUrgHint"></div></div>
       <div class="f"><label>Notas fiscais</label><input id="nNf" placeholder="Digite e tecle Enter"><div class="chips" id="nfChips"></div></div>
       <div class="f full"><label>Observação</label><textarea id="nObs"></textarea><div class="hint" id="nObsHint"></div></div>
       <div class="f full"><label>Anexos (PDF ou imagem, até 10 MB cada)</label><input type="file" id="nFiles" multiple accept=".pdf,image/png,image/jpeg,image/webp"></div>
@@ -270,7 +280,7 @@ const copyBtn = v => v ? `<button class="cp" data-copy="${esc(v)}" title="Copiar
 const configurado = !CONFIG.SUPABASE_URL.includes('COLE_');
 const sb = configurado ? supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY) : null;
 
-const S = { tab: ls.get('fin_tab') === 'FIN' ? 'FIN' : 'SAC', pessoas: [], rows: [], total: 0, page: 0, loading: false, open: null, hist: [], anexos: [], all: [], shown: 30, seq: 0 };
+const S = { tab: ls.get('fin_tab') === 'FIN' ? 'FIN' : 'SAC', pessoas: [], rows: [], total: 0, page: 0, loading: false, open: null, hist: [], anexos: [], all: [], shown: 30, seq: 0, rt: false };
 
 // ---------- utilidades ----------
 function fmtDT(iso){
@@ -305,9 +315,9 @@ function validCNPJ(c){
 const docValido = d => !d || (d.length === 11 ? validCPF(d) : d.length === 14 ? validCNPJ(d) : false);
 
 let toastT;
-function toast(msg, kind=''){
+function toast(msg, kind='', ms=3500){
   const t = $('#toast'); t.textContent = msg; t.className = 'toast ' + kind; t.style.display = 'block';
-  clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 3500);
+  clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', ms);
 }
 function err(e){ console.error(e); toast('Erro: ' + (e?.message || e), 'bad'); }
 
@@ -343,10 +353,13 @@ function renderTipos(){
   $('#fTipo').innerHTML = `<option value="">Todos</option>` + TIPOS.map(t => `<option ${t === f ? 'selected' : ''}>${esc(t)}</option>`).join('');
   $('#nTipo').innerHTML = `<option value="">Selecione…</option>` + TIPOS.map(t => `<option ${t === n ? 'selected' : ''}>${esc(t)}</option>`).join('');
 }
+let TIPOS_URG = ['boleto não registrado', 'segunda via de boleto'];
+const permiteUrg = t => TIPOS_URG.includes(String(t || '').trim().toLowerCase());
 async function loadTipos(){
-  const { data, error } = await sb.from(T('sla')).select('tipo');
+  const { data, error } = await sb.from(T('sla')).select('*');
   if(error || !data || !data.length) return;           // mantém a lista padrão
   const nomes = data.map(r => String(r.tipo || '').trim()).filter(Boolean);
+  if('permite_urgente' in data[0]) TIPOS_URG = data.filter(r => r.permite_urgente).map(r => String(r.tipo).trim().toLowerCase());
   TIPOS = nomes.filter(t => t !== 'Outros assuntos').sort((a, b) => a.localeCompare(b, 'pt-BR'));
   if(nomes.includes('Outros assuntos')) TIPOS.push('Outros assuntos');
   renderTipos();
@@ -428,6 +441,32 @@ function fmtDur(sec){
   if(h >= 48) return `${Math.floor(h / 24)}d ${h % 24}h`;
   return h + 'h' + (m ? String(m).padStart(2, '0') : '');
 }
+// Prazo do urgente: antes das 16h vence às 16h do dia; depois, meio-dia do próximo dia útil
+function urgDeadline(ms){
+  const l = ms - BRT, dia = Math.floor(l / DIA) * DIA, dow = new Date(l).getUTCDay(), min = (l - dia) / 60000;
+  if(dow === 0 || dow === 6) return dia + (dow === 6 ? 2 : 1) * DIA + 16 * 3600e3 + BRT;
+  if(min < 960) return dia + 16 * 3600e3 + BRT;
+  return dia + (dow === 5 ? 3 : 1) * DIA + 12 * 3600e3 + BRT;
+}
+function slaUrgente(c, r){
+  const v = Date.parse(c.sla_vence_em), ini = Date.parse(c.sla_janela_inicio || c.created_at), agora = Date.now();
+  const base = { ...r, urg: true, vence: v };
+  if(c.status === 'Devolvido' || c.status === 'Finalizado'){
+    const p = Date.parse(c.sla_parado_em || c.devolvido_em || c.updated_at);
+    return p <= v ? { ...base, cat:'fim_ok', cls:'sla-end', txt:'✔ no prazo', ord: 8 }
+                  : { ...base, cat:'fim_fora', cls:'sla-endbad', txt:`✖ fora do prazo (+${fmtDur((p - v) / 1000)})`, ord: 8 };
+  }
+  if(c.status === 'Aguardando'){
+    const p = Date.parse(c.sla_parado_em || agora);
+    return { ...base, cat:'pausado', cls:'sla-pause', ord: 5, resta: (v - p) / 1000,
+             txt: '⏸ pausado · ' + (p <= v ? 'faltam ' + fmtDur((v - p) / 1000) : 'atrasado ' + fmtDur((p - v) / 1000)) };
+  }
+  const resta = (v - agora) / 1000, pct = (agora - ini) / Math.max(1, v - ini);
+  const quanto = resta >= 0 ? 'faltam ' + fmtDur(resta) : 'atrasado ' + fmtDur(-resta);
+  if(resta < 0) return { ...base, resta, cat:'atrasado', cls:'sla-late', txt: quanto, dot: true, ord: 1 };
+  if(pct >= 0.8) return { ...base, resta, cat:'vencendo', cls:'sla-warn', txt: quanto, dot: true, ord: 2 };
+  return { ...base, resta, cat:'noprazo', cls:'sla-ok', txt: quanto, dot: true, ord: 3 };
+}
 // cat: noprazo | vencendo | atrasado | pausado | fim_ok | fim_fora | cancelado
 function slaInfo(c){
   const total = (c.sla_horas || 24) * 3600;
@@ -437,6 +476,7 @@ function slaInfo(c){
   const resta = total - cons, pct = cons / total;
   const r = { cons, resta, pct, total, vence: null };
   if(c.status === 'Cancelado') return { ...r, cat:'cancelado', cls:'sla-x', txt:'Cancelado', ord: 9 };
+  if(c.urgente && c.sla_vence_em) return slaUrgente(c, r);
   if(c.status === 'Devolvido' || c.status === 'Finalizado')
     return resta >= 0 ? { ...r, cat:'fim_ok', cls:'sla-end', txt:`✔ no prazo (${fmtDur(cons)})`, ord: 8 }
                       : { ...r, cat:'fim_fora', cls:'sla-endbad', txt:`✖ fora do prazo (+${fmtDur(-resta)})`, ord: 8 };
@@ -478,13 +518,13 @@ async function fetchAll(q){
     if(data.length < 1000) return out;
   }
 }
-async function load(){
+async function load(manterPagina = false){
   if(!sb) return;
   const seq = ++S.seq;
   try {
     const data = await fetchAll(buildQuery);
     if(seq !== S.seq) return;          // uma busca mais nova já chegou
-    S.all = data; S.shown = PAGE;
+    S.all = data; if(!manterPagina) S.shown = PAGE;
     renderList();
   } catch(e){ err(e); }
 }
@@ -492,8 +532,10 @@ function visiveis(){
   const f = $('#fSla').value;
   let rows = S.all.map(r => ({ r, s: slaInfo(r) }));
   if(f) rows = rows.filter(x => x.s.cat === f);
+  if($('#fUrg').value) rows = rows.filter(x => x.r.urgente);
+  const grupo = x => x.r.urgente && x.s.ord <= 5 ? 0 : 1;   // urgentes em aberto sempre no topo
   if($('#fOrdem').value === 'urgencia')
-    rows.sort((a, b) => a.s.ord - b.s.ord || (a.s.ord <= 3 ? a.s.resta - b.s.resta : Date.parse(b.r.created_at) - Date.parse(a.r.created_at)));
+    rows.sort((a, b) => grupo(a) - grupo(b) || a.s.ord - b.s.ord || (a.s.ord <= 5 ? a.s.resta - b.s.resta : Date.parse(b.r.created_at) - Date.parse(a.r.created_at)));
   return rows;
 }
 function renderList(){
@@ -502,8 +544,8 @@ function renderList(){
   S.total = lista.length;
   $('#rows').innerHTML = !S.rows.length
     ? `<tr><td colspan="10" class="empty">Nenhum chamado encontrado</td></tr>`
-    : S.rows.map(({ r, s }) => `<tr data-id="${r.id}">
-        <td class="mono nw"><b>${esc(r.protocolo)}</b>${copyBtn(r.protocolo)}</td>
+    : S.rows.map(({ r, s }) => `<tr data-id="${r.id}" class="${r.urgente && !FINAIS.includes(r.status) ? 'urg' : ''}">
+        <td class="mono nw"><b>${esc(r.protocolo)}</b>${copyBtn(r.protocolo)}${r.urgente ? '<div><span class="urgtag">URGENTE</span></div>' : ''}</td>
         <td class="nw">${fmtDT(r.created_at)}</td>
         <td>${esc(r.cliente_nome) || '<span class="sub">-</span>'}</td>
         <td class="nw">${r.documento ? esc(maskDoc(r.documento)) + copyBtn(r.documento) : '<span class="sub">-</span>'}</td>
@@ -518,13 +560,13 @@ function renderList(){
 }
 $('#rows').onclick = e => { const tr = e.target.closest('tr[data-id]'); if(tr) openDetail(+tr.dataset.id, true); };
 $('#more').onclick = () => { S.shown += PAGE; renderList(); };
-$('#fSla').onchange = $('#fOrdem').onchange = () => { S.shown = PAGE; renderList(); };
-setInterval(() => { if(S.all.length) renderList(); if(S.open && $('#drawer').classList.contains('show')) atualizaSlaDetalhe(); }, 60000);
+$('#fSla').onchange = $('#fOrdem').onchange = $('#fUrg').onchange = () => { S.shown = PAGE; renderList(); };
+setInterval(() => { if(sb && !S.rt) load(true); else if(S.all.length) renderList(); if(S.open && $('#drawer').classList.contains('show')) atualizaSlaDetalhe(); }, 60000);
 
 let buscaT;
 $('#fBusca').oninput = () => { clearTimeout(buscaT); buscaT = setTimeout(load, 400); };
 ['#fStatus','#fTipo','#fAberto','#fDe','#fAte'].forEach(s => $(s).onchange = () => load());
-$('#btnLimpar').onclick = () => { $('#fBusca').value=''; $('#fStatus').value='ativos'; $('#fTipo').value=''; $('#fAberto').value=''; $('#fDe').value=''; $('#fAte').value=''; $('#fSla').value=''; $('#fOrdem').value='urgencia'; load(); };
+$('#btnLimpar').onclick = () => { $('#fBusca').value=''; $('#fStatus').value='ativos'; $('#fTipo').value=''; $('#fAberto').value=''; $('#fDe').value=''; $('#fAte').value=''; $('#fSla').value=''; $('#fUrg').value=''; $('#fOrdem').value='urgencia'; load(); };
 
 // ---------- anexos ----------
 const BUCKET = 'fin-anexos';
@@ -601,6 +643,7 @@ function acoes(c){
   } else {
     if(c.status === 'Aguardando') a.push(['Devolver ao Financeiro','pri','responder']);
     if(c.status === 'Devolvido'){ a.push(['Finalizar chamado','pri','finalizar']); a.push(['Devolver ao Financeiro','','reenviar']); }
+    if(c.urgente && !FINAIS.includes(c.status)) a.push(['Remover urgência','','desurgente']);
     if(!FINAIS.includes(c.status)) a.push(['Cancelar chamado','danger','cancelar']);
   }
   return a;
@@ -608,7 +651,7 @@ function acoes(c){
 
 function renderDetail(){
   const c = S.open, final = FINAIS.includes(c.status);
-  $('#dTitle').innerHTML = `<span class="mono">${esc(c.protocolo)}</span>${copyBtn(c.protocolo)} ${badge(c.status)}`;
+  $('#dTitle').innerHTML = `<span class="mono">${esc(c.protocolo)}</span>${copyBtn(c.protocolo)} ${badge(c.status)}${c.urgente ? ' <span class="urgtag">URGENTE</span>' : ''}`;
   const doc = c.documento ? `${esc(maskDoc(c.documento))}${copyBtn(c.documento)}${docValido(c.documento) ? '' : ' <span class="warn">inválido</span>'}` : '-';
   const nfs = (c.nfs || []).length ? c.nfs.map(n => `<span class="mono">${esc(n)}</span>${copyBtn(n)}`).join('&nbsp;&nbsp;') : '-';
   const linha = (k, v, cls='') => `<div class="${cls}"><div class="k">${k}</div><div class="v">${v || '-'}</div></div>`;
@@ -630,7 +673,7 @@ function renderDetail(){
       ${linha('CPF / CNPJ', doc)}
       ${linha('Código do cliente', c.codigo_cliente ? esc(c.codigo_cliente) + copyBtn(c.codigo_cliente) : '')}
       ${linha('Notas fiscais', nfs, 'full')}
-      <div><div class="k">SLA (${c.sla_horas}h)</div><div class="v" id="slaDet"></div></div>
+      <div><div class="k">SLA (${c.urgente ? 'urgente' : c.sla_horas + 'h'})</div><div class="v" id="slaDet"></div></div>
       ${linha('Em andamento por', c.em_andamento_por ? `${esc(c.em_andamento_por)}<div class="sub">${fmtDT(c.em_andamento_em)}</div>` : '')}
       ${c.observacao ? `<div class="full"><div class="k">Observação</div><div class="obs">${esc(c.observacao)}</div></div>` : ''}
       ${extra}
@@ -701,6 +744,19 @@ const ACOES = {
     const r = await ask({ title:'Devolver ao Financeiro', label:'O chamado volta para o Financeiro e o SLA continua de onde parou.', field:'none', pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
     if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro', null, r.nome);
   },
+  async desurgente(){
+    const r = await ask({ title:'Remover urgência', label:'O chamado volta para o SLA normal do tipo de demanda, contado desde a abertura.', field:'none', pessoas:'SAC', okLabel:'Remover urgência', danger:true });
+    if(!r) return;
+    const id = S.open.id;
+    const { data, error } = await sb.from(T('chamados')).update({ urgente: false }).eq('id', id).eq('urgente', true).select();
+    if(error) return err(error);
+    if(data.length){
+      const h = await sb.from(T('historico')).insert({ chamado_id: id, autor: r.nome, time: 'SAC', tipo: 'status', texto: 'Urgência removida' });
+      if(h.error) err(h.error);
+      toast('Urgência removida', 'ok');
+    }
+    openDetail(id);
+  },
   async cancelar(){
     const r = await ask({ title:'Cancelar chamado', label:'Motivo do cancelamento (obrigatório):', required:true, pessoas:'SAC', okLabel:'Cancelar chamado', danger:true });
     if(r) mudarStatus('Cancelado', { cancelado_em: now(), cancelado_por: r.nome, motivo_cancelamento: r.texto }, 'Chamado cancelado', null, r.nome);
@@ -756,12 +812,12 @@ $('#csvOk').onclick = async () => {
       return q;
     });
     if(!rows.length){ toast('Nenhum chamado no período', 'bad'); return; }
-    const cab = ['Protocolo','Abertura','Aberto por','Cliente','CPF/CNPJ','Código','NFs','Tipo','Observação','Status','Assumido por','Assumido em','Devolvido em','Devolvido por','Finalizado em','Finalizado por','Cancelado em','Cancelado por','Motivo do cancelamento','SLA (h)','Tempo consumido (h)','Situação do SLA'];
+    const cab = ['Protocolo','Abertura','Aberto por','Cliente','CPF/CNPJ','Código','NFs','Tipo','Urgente','Observação','Status','Assumido por','Assumido em','Devolvido em','Devolvido por','Finalizado em','Finalizado por','Cancelado em','Cancelado por','Motivo do cancelamento','SLA (h)','Prazo urgente','Tempo consumido (h)','Situação do SLA'];
     const linhas = rows.map(c => {
       const s = slaInfo(c);
-      return [c.protocolo, fmtDT(c.created_at), c.aberto_por, c.cliente_nome, maskDoc(c.documento), c.codigo_cliente, (c.nfs || []).join(', '), c.tipo, c.observacao, statusLabel(c.status),
+      return [c.protocolo, fmtDT(c.created_at), c.aberto_por, c.cliente_nome, maskDoc(c.documento), c.codigo_cliente, (c.nfs || []).join(', '), c.tipo, c.urgente ? 'Sim' : 'Não', c.observacao, statusLabel(c.status),
         c.em_andamento_por, fmtDT(c.em_andamento_em), fmtDT(c.devolvido_em), c.devolvido_por, fmtDT(c.finalizado_em), c.finalizado_por, fmtDT(c.cancelado_em), c.cancelado_por, c.motivo_cancelamento,
-        c.sla_horas, horasBR(s.cons), SLA_NOME[s.cat]].map(csvCell).join(';');
+        c.urgente ? '' : c.sla_horas, c.urgente ? fmtDT(c.sla_vence_em) : '', horasBR(s.cons), SLA_NOME[s.cat]].map(csvCell).join(';');
     });
     const csv = '﻿' + [cab.join(';'), ...linhas].join('\r\n');
     const sufixo = de || ate ? `_${de || 'inicio'}_a_${ate || 'hoje'}` : '_todos';
@@ -793,12 +849,19 @@ $('#nDoc').onblur = () => {
   const d = dig($('#nDoc').value);
   if(d && !docValido(d)){ $('#nDocHint').textContent = 'CPF/CNPJ inválido'; $('#nDocHint').className = 'hint bad'; $('#nDoc').classList.add('invalid'); }
 };
-$('#nTipo').onchange = () => { $('#nObsHint').textContent = $('#nTipo').value === 'Outros assuntos' ? 'Obrigatória para Outros assuntos' : ''; };
+function atualizaUrgForm(){
+  const pode = permiteUrg($('#nTipo').value);
+  $('#nUrgWrap').style.display = pode ? '' : 'none';
+  if(!pode) $('#nUrg').checked = false;
+  $('#nUrgHint').textContent = $('#nUrg').checked ? 'Prazo do Financeiro: até ' + fmtDT(new Date(urgDeadline(Date.now())).toISOString()) : '';
+}
+$('#nTipo').onchange = () => { $('#nObsHint').textContent = $('#nTipo').value === 'Outros assuntos' ? 'Obrigatória para Outros assuntos' : ''; atualizaUrgForm(); };
+$('#nUrg').onchange = atualizaUrgForm;
 
 function abrirNovo(){
   fillWho($('#nWho'), 'SAC', false); $('#nWho').classList.remove('invalid');
   ['#nNome','#nTel','#nDoc','#nCod','#nNf','#nObs'].forEach(s => { $(s).value=''; $(s).classList.remove('invalid'); });
-  $('#nTipo').value=''; $('#nFiles').value=''; $('#nDocHint').textContent=''; $('#nObsHint').textContent=''; NF.list = []; renderNf();
+  $('#nTipo').value=''; $('#nUrg').checked = false; atualizaUrgForm(); $('#nFiles').value=''; $('#nDocHint').textContent=''; $('#nObsHint').textContent=''; NF.list = []; renderNf();
   $('#novoModal').classList.add('show'); setTimeout(() => $('#nNome').focus(), 50);
 }
 $('#btnNovo').onclick = abrirNovo;
@@ -841,17 +904,42 @@ $('#nSalvar').onclick = async () => {
     codigo_cliente: $('#nCod').value.trim() || null,
     nfs: NF.list,
     tipo: tipo || null,
-    observacao: obs || null
+    observacao: obs || null,
+    urgente: $('#nUrg').checked && permiteUrg(tipo)
   }).select().single();
   btn.disabled = false;
   if(error){ $('#novoModal').classList.add('show'); return err(error); }
-  await sb.from(T('historico')).insert({ chamado_id: data.id, autor: n, time: 'SAC', tipo: 'status', texto: 'Chamado aberto' });
+  await sb.from(T('historico')).insert({ chamado_id: data.id, autor: n, time: 'SAC', tipo: 'status', texto: data.urgente ? 'Chamado aberto como URGENTE' : 'Chamado aberto' });
   if(arquivos.length){ toast('Enviando anexos…'); await subirAnexos(data.id, arquivos, n, 'SAC'); }
   $('#novoModal').classList.remove('show');
   toast(`Chamado ${data.protocolo} aberto`, 'ok');
   await load();
   openDetail(data.id);
 };
+
+// ---------- atualização automática (tempo real) ----------
+let rtT, rtIds = new Set();
+function onRt(tabela, p){
+  const row = p.new && Object.keys(p.new).length ? p.new : (p.old || {});
+  const id = tabela === 'chamados' ? row.id : row.chamado_id;
+  if(id) rtIds.add(id);
+  if(tabela === 'chamados' && p.eventType === 'INSERT' && row.urgente && S.tab === 'FIN')
+    toast(`Novo chamado URGENTE: ${row.protocolo}`, 'urg', 10000);
+  clearTimeout(rtT);
+  rtT = setTimeout(async () => {
+    const ids = rtIds; rtIds = new Set();
+    await load(true);
+    if(S.open && $('#drawer').classList.contains('show') && ids.has(S.open.id)) openDetail(S.open.id);
+  }, 700);
+}
+function iniciaTempoReal(){
+  try {
+    const ch = sb.channel('fin-rt-' + (CONFIG.PREFIX || 'prod'));
+    ['chamados','historico','anexos'].forEach(t =>
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: T(t) }, p => onRt(t, p)));
+    ch.subscribe(st => { S.rt = st === 'SUBSCRIBED'; });
+  } catch(e){ console.error(e); S.rt = false; }
+}
 
 // Esc fecha o que estiver aberto
 document.addEventListener('keydown', e => {
@@ -870,7 +958,7 @@ document.addEventListener('keydown', e => {
   $('#fAberto').innerHTML = `<option value="">Todos</option>`;
   setTab(S.tab);
   if(!configurado){ $('#cfgwarn').style.display = 'block'; $('#rows').innerHTML = `<tr><td colspan="10" class="empty">Aguardando configuração</td></tr>`; return; }
-  loadPessoas(); loadTipos(); load();
+  loadPessoas(); loadTipos(); load(); iniciaTempoReal();
 })();
 </script>
 </body>
