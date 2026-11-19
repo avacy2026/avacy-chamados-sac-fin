@@ -4,22 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Chamados Financeiro</title>
+<title>Central de Chamados Operacionais</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--roxo:#7C3AED;--roxo-light:#A78BFA;--roxo-dark:#5B21B6;--amber:#F59E0B;--teal:#0D9488;--teal-light:#2DD4BF;--bg:#0F0D1A;--card:#1A1730;--card2:#221E38;--input:#2A2545;--line:#3D3660;--ink:#F8F7FF;--mute:#9B96C0;--dim:#6B6490;--ok:#10B981;--bad:#EF4444;--r:12px}
 *{box-sizing:border-box}
 body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
-header{background:linear-gradient(135deg,#1A1730 0%,#0F0D1A 100%);border-bottom:1px solid var(--line);padding:0 32px;min-height:64px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;position:sticky;top:0;z-index:30}
-.brand{font-size:20px;font-weight:800;background:linear-gradient(90deg,var(--roxo-light),var(--teal-light));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
-.env{background:var(--amber);color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
-.tabs{display:flex;gap:4px}
-.tabs button{background:transparent;border:0;color:var(--mute);padding:8px 20px;border-radius:8px;cursor:pointer;font:500 14px 'Inter',sans-serif;transition:all .2s}
+header{background:linear-gradient(135deg,#1A1730 0%,#0F0D1A 100%);border-bottom:1px solid var(--line);padding:0 32px;min-height:64px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.brand{font-size:19px;font-weight:800;background:linear-gradient(90deg,var(--roxo-light),var(--teal-light));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.env{background:var(--amber);color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{background:transparent;border:0;color:var(--mute);padding:8px 16px;border-radius:8px;cursor:pointer;font:500 14px 'Inter',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
 .tabs button:hover{background:var(--card2);color:var(--ink)}
 .tabs button.on{background:linear-gradient(135deg,var(--roxo-dark),var(--roxo));color:#fff}
-main{padding:28px 32px;max-width:1400px;margin:0 auto}
-.cfgwarn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.4);color:var(--amber);padding:10px 14px;border-radius:8px;margin-bottom:12px;display:none}
+.cnt{background:var(--amber);color:#000;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px}
+.cnt:empty{display:none}
+main{padding:24px 24px 40px;max-width:1600px;margin:0 auto}
+.sub-tabs{display:flex;gap:6px;margin-bottom:12px}
+.sub-tabs button{font:600 13px 'Inter',sans-serif;background:var(--card);border:1px solid var(--line);color:var(--mute);padding:8px 16px;border-radius:8px;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.sub-tabs button.on{border-color:var(--roxo-light);color:var(--ink);background:var(--card2)}
 .bar{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;background:var(--card);padding:16px;border-radius:var(--r);border:1px solid var(--line);margin-bottom:14px}
 .f{display:flex;flex-direction:column;gap:6px}
 .f label{font-size:11px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
@@ -27,6 +31,7 @@ input,select,textarea{font:14px 'Inter',sans-serif;padding:9px 12px;border:1px s
 input:focus,select:focus,textarea:focus{border-color:var(--roxo-light);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
 input[type=date]{color-scheme:dark}
 select option{background:var(--card2)}
+select:disabled{opacity:.5}
 ::placeholder{color:var(--dim)}
 .invalid{border-color:var(--bad)!important;background:rgba(239,68,68,.08)!important}
 textarea{resize:vertical;min-height:70px}
@@ -34,29 +39,27 @@ textarea{resize:vertical;min-height:70px}
 .btn:hover{border-color:var(--roxo-light);color:var(--ink)}
 .btn.pri{background:linear-gradient(135deg,var(--roxo),var(--roxo-dark));border-color:transparent;color:#fff}
 .btn.pri:hover{filter:brightness(1.15)}
+.btn.teal{background:linear-gradient(135deg,var(--teal),#0F766E);border-color:transparent;color:#fff}
 .btn.danger{background:transparent;color:var(--bad);border-color:rgba(239,68,68,.4)}
 .btn.danger:hover{background:rgba(239,68,68,.1)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .spacer{flex:1}
 .count{color:var(--mute);font-size:12px;margin:0 2px 8px}
 .tablewrap{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:1100px}
+table{width:100%;border-collapse:collapse;min-width:1000px;font-size:13px}
 .nw{white-space:nowrap}
-th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--mute);padding:12px 14px;border-bottom:1px solid var(--line);background:var(--card2);letter-spacing:.05em}
-td{padding:12px 14px;border-bottom:1px solid rgba(61,54,96,.5);vertical-align:top}
+th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--mute);padding:12px 10px;border-bottom:1px solid var(--line);background:var(--card2);letter-spacing:.05em}
+td{padding:10px 10px;border-bottom:1px solid rgba(61,54,96,.5);vertical-align:top}
 tbody tr{cursor:pointer;transition:background .15s}
+tbody tr:hover{background:var(--card2)}
 tbody tr.urg{background:rgba(239,68,68,.07)}
 tbody tr.urg:hover{background:rgba(239,68,68,.13)}
 tbody tr.urg td:first-child{box-shadow:inset 4px 0 0 var(--bad)}
 .urgtag{display:inline-block;background:var(--bad);color:#fff;font:800 10px 'Inter',sans-serif;letter-spacing:.08em;padding:3px 8px;border-radius:4px;vertical-align:middle}
 td .urgtag{margin-top:5px}
-.urgchk{display:flex!important;align-items:center;gap:10px;text-transform:none!important;letter-spacing:0!important;font-size:14px!important;color:var(--ink)!important;cursor:pointer;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:10px 12px}
-.grid2 .f .urgchk input{width:18px!important;height:18px;flex:0 0 18px;padding:0;margin:0;accent-color:var(--bad);cursor:pointer;box-shadow:none}
-.toast.urg{background:#3B0D12;border-color:var(--bad);color:#fff;font-weight:600}
-tbody tr:hover{background:var(--card2)}
 .sub{color:var(--mute);font-size:12px;margin-top:2px}
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
-td.mono b{color:var(--roxo-light)}
+td .mono b{color:var(--roxo-light)}
 .empty{text-align:center;color:var(--mute);padding:40px!important;cursor:default}
 .st{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid transparent}
 .st-aberto{background:rgba(59,130,246,.15);color:#93C5FD;border-color:rgba(59,130,246,.4)}
@@ -65,7 +68,6 @@ td.mono b{color:var(--roxo-light)}
 .st-devolvido{background:rgba(13,148,136,.15);color:var(--teal-light);border-color:rgba(13,148,136,.45)}
 .st-finalizado{background:rgba(100,100,120,.2);color:#C7C3E0;border-color:rgba(100,100,120,.4)}
 .st-cancelado{background:transparent;color:var(--dim);border-color:rgba(100,100,120,.3);text-decoration:line-through}
-.more{display:block;margin:14px auto}
 .sla{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid transparent}
 .sla i{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
 .sla-ok{background:rgba(16,185,129,.12);color:#6EE7B7;border-color:rgba(16,185,129,.4)}.sla-ok i{background:var(--ok)}
@@ -75,14 +77,14 @@ td.mono b{color:var(--roxo-light)}
 .sla-end{background:rgba(100,100,120,.15);color:#C7C3E0;border-color:rgba(100,100,120,.35)}
 .sla-endbad{background:rgba(100,100,120,.15);color:#FCA5A5;border-color:rgba(239,68,68,.3)}
 .sla-x{color:var(--dim)}
-.box .f input[type=date]{width:100%}
-.grid2.dates{margin-top:6px}
+.setor{display:inline-block;font-size:12px;font-weight:600;color:var(--ink);background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:2px 8px;white-space:nowrap}
+.more{display:block;margin:14px auto}
 .cp{border:0;background:none;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 4px;border-radius:4px;transition:all .15s}
 .cp:hover{color:var(--roxo-light);background:rgba(124,58,237,.1)}
 /* drawer */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:40}
 .overlay.show{display:block}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(600px,100%);background:var(--card);border-left:1px solid var(--line);z-index:50;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.5)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--card);border-left:1px solid var(--line);z-index:50;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.5)}
 .drawer.show{transform:none}
 .dh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:var(--card2)}
 .dh #dTitle{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -99,34 +101,30 @@ td.mono b{color:var(--roxo-light)}
 .acts:empty{display:none}
 h4{margin:0 0 10px;font-size:11px;text-transform:uppercase;color:var(--mute);letter-spacing:.05em}
 .ev{text-align:center;margin:12px 0;font-size:12px;color:var(--dim)}
-.ev span{background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:99px;color:var(--ink);font-weight:600}
+.ev span{background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:99px;color:var(--ink);font-weight:600;display:inline-block}
 .ev small{display:block;margin-top:4px}
 .msg{max-width:85%;margin:8px 0;padding:9px 12px;border-radius:10px;border:1px solid var(--line)}
-.msg.sac{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.35)}
-.msg.fin{background:rgba(13,148,136,.12);border-color:rgba(13,148,136,.35);margin-left:auto}
+.msg.sol{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.35)}
+.msg.set{background:rgba(13,148,136,.12);border-color:rgba(13,148,136,.35);margin-left:auto}
 .mh{font-size:12px;margin-bottom:4px}
 .mh .tm{color:var(--mute)}
 .mh small{color:var(--dim);margin-left:4px}
 .mb{white-space:pre-wrap;word-break:break-word}
-.composer{border-top:1px solid var(--line);padding:12px 20px;display:flex;gap:8px;align-items:flex-end;background:var(--card2)}
-.composer textarea{flex:1;min-height:56px}
-.composer select{width:150px}
-#askWhoWrap{margin-bottom:12px}
+.composer{border-top:1px solid var(--line);padding:12px 20px;display:flex;gap:8px;align-items:flex-end;background:var(--card2);flex-wrap:wrap}
+.composer textarea{flex:1;min-height:56px;min-width:200px}
+.composer select{width:170px}
+.btn.clip{padding:9px 12px;font-size:15px}
 .anexos{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
 .anx{display:flex;align-items:center;gap:12px;background:var(--input);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .anx .ic{font-size:10px;font-weight:800;padding:6px 7px;border-radius:6px;background:rgba(239,68,68,.15);color:#FCA5A5;border:1px solid rgba(239,68,68,.35)}
 .anx .ic.img{background:rgba(13,148,136,.15);color:var(--teal-light);border-color:rgba(13,148,136,.4)}
 .anx-i{flex:1;min-width:0}
 .anx-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.btn.clip{padding:9px 12px;font-size:15px}
-input[type=file]{padding:7px;cursor:pointer}
-input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;margin-right:10px;cursor:pointer}
-#askWho{width:100%}
 /* modais */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
 .modal.show{display:flex}
-.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(460px,100%);max-height:92vh;overflow:auto}
-.box.wide{width:min(720px,100%)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(480px,100%);max-height:92vh;overflow:auto}
+.box.wide{width:min(760px,100%)}
 .box h3{margin:0 0 16px;font-size:18px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .grid2 .f input,.grid2 .f select,.grid2 .f textarea{width:100%}
@@ -136,38 +134,46 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .chip{background:rgba(124,58,237,.18);color:var(--roxo-light);border:1px solid rgba(124,58,237,.4);border-radius:99px;padding:3px 4px 3px 10px;font-size:12px;display:inline-flex;align-items:center;gap:2px}
 .chip button{border:0;background:none;cursor:pointer;color:var(--roxo-light);font-size:14px;line-height:1;padding:0 4px}
+.urgchk{display:flex!important;align-items:center;gap:10px;text-transform:none!important;letter-spacing:0!important;font-size:14px!important;color:var(--ink)!important;cursor:pointer;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:10px 12px}
+.grid2 .f .urgchk input,.f .urgchk input{width:18px!important;height:18px;flex:0 0 18px;padding:0;margin:0;accent-color:var(--bad);cursor:pointer;box-shadow:none}
+input[type=file]{padding:7px;cursor:pointer}
+input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;margin-right:10px;cursor:pointer}
 #askLabel{margin-bottom:10px;color:var(--ink)}
 #askLabel ul{padding-left:18px;margin:8px 0}
-#askText,#askInput{width:100%}
+#askText,#askInput,#askWho{width:100%}
+#askWhoWrap{margin-bottom:12px}
 /* toast */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);color:var(--ink);padding:11px 18px;border-radius:10px;z-index:80;display:none;max-width:90%;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .toast.ok{border-color:rgba(16,185,129,.5);color:var(--ok)}.toast.bad{border-color:rgba(239,68,68,.5);color:var(--bad)}
+.toast.urg{background:#3B0D12;border-color:var(--bad);color:#fff;font-weight:600}
+.toast.info{background:#0F2E2B;border-color:var(--teal);color:#fff;font-weight:600}
 ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
-@media(max-width:640px){header{padding:10px 16px}main{padding:16px}.composer{flex-wrap:wrap}.info,.grid2{grid-template-columns:1fr}}
+@media(max-width:640px){header{padding:10px 16px}main{padding:16px 16px 120px}.info,.grid2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
-  <span class="brand">Chamados Financeiro</span>
+  <span class="brand">Central de Chamados Operacionais</span>
   <span class="env" id="env"></span>
-  <div class="tabs">
-    <button data-tab="SAC">SAC</button>
-    <button data-tab="FIN">Financeiro</button>
-  </div>
+  <div class="tabs" id="tabs"></div>
 </header>
 
 <main>
-  <div class="cfgwarn" id="cfgwarn">Configure <b>SUPABASE_URL</b> e <b>SUPABASE_KEY</b> no início do script para conectar.</div>
+  <div class="sub-tabs" id="subTabs" style="display:none">
+    <button data-sub="recebidos">Recebidos <span class="cnt" id="cntRec"></span></button>
+    <button data-sub="abertos">Abertos pelo SAC <span class="cnt" id="cntAb"></span></button>
+  </div>
 
   <div class="bar">
-    <div class="f" style="flex:1;min-width:220px"><label>Busca</label><input id="fBusca" placeholder="Protocolo, cliente, CPF/CNPJ, código, NF, telefone"></div>
+    <div class="f" style="flex:1;min-width:220px"><label>Busca</label><input id="fBusca" placeholder="Protocolo, cliente, CPF/CNPJ, código, NF, pedido, telefone"></div>
+    <div class="f"><label>Solicitante</label><select id="fSol"></select></div>
+    <div class="f" id="fSetorWrap"><label>Setor</label><select id="fSetor"></select></div>
     <div class="f"><label>Status</label><select id="fStatus"></select></div>
     <div class="f"><label>Tipo</label><select id="fTipo"></select></div>
-    <div class="f"><label>Aberto por</label><select id="fAberto"></select></div>
     <div class="f"><label>De</label><input type="date" id="fDe"></div>
     <div class="f"><label>Até</label><input type="date" id="fAte"></div>
     <div class="f"><label>SLA</label><select id="fSla">
-      <option value="">Todos</option><option value="noprazo">🟢 No prazo</option><option value="vencendo">🟡 Vencendo</option><option value="atrasado">🔴 Atrasado</option><option value="pausado">⏸ Pausado</option><option value="fim_ok">✔ Encerrado no prazo</option><option value="fim_fora">✖ Encerrado fora do prazo</option>
+      <option value="">Todos</option><option value="noprazo">🟢 No prazo</option><option value="vencendo">🟡 Vencendo</option><option value="atrasado">🔴 Atrasado</option><option value="pausado">⏸ Pausado</option><option value="fim_ok">✔ Encerrado no prazo</option><option value="fim_fora">✖ Encerrado fora do prazo</option><option value="nao_pertence">Não pertence ao setor</option>
     </select></div>
     <div class="f"><label>Urgência</label><select id="fUrg"><option value="">Todos</option><option value="sim">Somente urgentes</option></select></div>
     <div class="f"><label>Ordenar</label><select id="fOrdem"><option value="urgencia">Mais urgentes</option><option value="recentes">Mais recentes</option></select></div>
@@ -180,7 +186,7 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
   <div class="count" id="count"></div>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Protocolo</th><th>Abertura</th><th>Cliente</th><th>CPF / CNPJ</th><th>Código</th><th>NFs</th><th>Tipo</th><th>Status</th><th>SLA</th><th>Aberto por</th></tr></thead>
+      <thead><tr><th>Protocolo / Abertura</th><th>Solicitante</th><th>Setor</th><th>Cliente</th><th>CPF / CNPJ</th><th>Código</th><th>NFs / Pedido</th><th>Tipo</th><th>Status</th><th>SLA</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
@@ -193,7 +199,7 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
   <div class="db" id="dBody"></div>
   <div class="composer" id="composer">
     <select id="msgWho" title="Seu nome"></select>
-    <textarea id="msg" placeholder="Escreva aqui as informações para o outro setor (Ctrl+Enter envia)"></textarea>
+    <textarea id="msg" placeholder="Escreva aqui as informações para o outro lado (Ctrl+Enter envia)"></textarea>
     <button class="btn clip" id="btnAnexo" title="Anexar arquivo (PDF ou imagem, até 10 MB)">📎</button>
     <input type="file" id="fileIn" multiple accept=".pdf,image/png,image/jpeg,image/webp" hidden>
     <button class="btn pri" id="btnMsg">Enviar</button>
@@ -205,14 +211,16 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
   <div class="box wide">
     <h3>Novo chamado</h3>
     <div class="grid2">
-      <div class="f full"><label>Seu nome (quem está abrindo) *</label><select id="nWho"></select></div>
+      <div class="f"><label>Seu nome (quem está abrindo) *</label><select id="nWho"></select></div>
+      <div class="f"><label>Setor de destino *</label><select id="nSetor"></select></div>
+      <div class="f"><label>Tipo de demanda *</label><select id="nTipo"></select></div>
+      <div class="f" id="nPedWrap" style="display:none"><label>Nº do pedido</label><input id="nPed"></div>
+      <div class="f full" id="nUrgWrap" style="display:none"><label class="urgchk"><input type="checkbox" id="nUrg"><span>Marcar como <b>URGENTE</b></span></label><div class="hint" id="nUrgHint"></div></div>
       <div class="f"><label>Cliente</label><input id="nNome"></div>
       <div class="f"><label>Telefone</label><input id="nTel" inputmode="numeric"></div>
       <div class="f"><label>CPF / CNPJ</label><input id="nDoc" inputmode="numeric"><div class="hint" id="nDocHint"></div></div>
       <div class="f"><label>Código do cliente</label><input id="nCod"></div>
-      <div class="f"><label>Tipo de demanda</label><select id="nTipo"></select></div>
-      <div class="f full" id="nUrgWrap" style="display:none"><label class="urgchk"><input type="checkbox" id="nUrg"><span>Marcar como <b>URGENTE</b></span></label><div class="hint" id="nUrgHint"></div></div>
-      <div class="f"><label>Notas fiscais</label><input id="nNf" placeholder="Digite e tecle Enter"><div class="chips" id="nfChips"></div></div>
+      <div class="f full"><label>Notas fiscais</label><input id="nNf" placeholder="Digite e tecle Enter"><div class="chips" id="nfChips"></div></div>
       <div class="f full"><label>Observação</label><textarea id="nObs"></textarea><div class="hint" id="nObsHint"></div></div>
       <div class="f full"><label>Anexos (PDF ou imagem, até 10 MB cada)</label><input type="file" id="nFiles" multiple accept=".pdf,image/png,image/jpeg,image/webp"></div>
     </div>
@@ -220,12 +228,26 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
   </div>
 </div>
 
-<!-- Exportar CSV -->
+<!-- Transferir / redirecionar -->
+<div class="modal" id="trModal">
+  <div class="box">
+    <h3 id="trTitle">Transferir chamado</h3>
+    <div class="sub" id="trSub" style="margin-bottom:14px"></div>
+    <div class="f" style="margin-bottom:12px"><label>Seu nome *</label><select id="trWho"></select></div>
+    <div class="f" style="margin-bottom:12px"><label>Setor de destino *</label><select id="trSetor"></select></div>
+    <div class="f" style="margin-bottom:12px"><label>Tipo de demanda *</label><select id="trTipo"></select></div>
+    <div class="f" id="trPedWrap" style="margin-bottom:12px;display:none"><label>Nº do pedido</label><input id="trPed"></div>
+    <div class="f" id="trUrgWrap" style="display:none"><label class="urgchk"><input type="checkbox" id="trUrg"><span>Marcar como <b>URGENTE</b></span></label><div class="hint" id="trUrgHint"></div></div>
+    <div class="foot"><button class="btn" id="trCancel">Voltar</button><button class="btn pri" id="trOk">Transferir</button></div>
+  </div>
+</div>
+
+<!-- CSV -->
 <div class="modal" id="csvModal">
   <div class="box">
     <h3>Baixar CSV</h3>
-    <div class="sub">Deixe as datas em branco para baixar todos os chamados. A data considerada é a de abertura.</div>
-    <div class="grid2 dates">
+    <div class="sub" id="csvSub"></div>
+    <div class="grid2" style="margin-top:8px">
       <div class="f"><label>De</label><input type="date" id="csvDe"></div>
       <div class="f"><label>Até</label><input type="date" id="csvAte"></div>
     </div>
@@ -247,6 +269,8 @@ input[type=file]::file-selector-button{font:600 12px 'Inter',sans-serif;backgrou
 
 <div class="toast" id="toast"></div>
 
+
+
 <script>
 // ============ CONFIGURAÇÃO ============
 const CONFIG = {
@@ -256,37 +280,140 @@ const CONFIG = {
   AMBIENTE: ''               // homologação: 'HOMOLOGAÇÃO'
 };
 // ======================================
-
-let TIPOS = ['Prorrogação de boleto','Segunda via de boleto','Erro no pagamento','Pagar título protestado','Carta de anuência','Pagamento não baixado','Boleto não registrado','Outros assuntos'];
-const STATUS = ['Aberto','Em andamento','Aguardando','Devolvido','Finalizado','Cancelado'];
-const STATUS_LABEL = {Aguardando:'Aguardando SAC/cliente', Devolvido:'Devolvido ao SAC'};
-const STATUS_CLS = {'Aberto':'aberto','Em andamento':'andamento','Aguardando':'aguardando','Devolvido':'devolvido','Finalizado':'finalizado','Cancelado':'cancelado'};
-const FINAIS = ['Finalizado','Cancelado'];
-const PAGE = 30;
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 const T = n => CONFIG.PREFIX + 'fin_' + n;
+const BUCKET = 'fin-anexos', PASTA = CONFIG.PREFIX ? 'hml' : 'prod';
+const SETORES = { SAC:'SAC', FIN:'Financeiro', FAT:'Faturamento', EXP:'Expedição/Logística' };
+const SET_KEYS = Object.keys(SETORES);
+const CORRENDO = ['Aberto','Em andamento'];
+const FINAIS = ['Finalizado','Cancelado'];
+const STATUS = ['Aberto','Em andamento','Aguardando','Devolvido','Finalizado','Cancelado'];
+const PAGE = 30;
+const MAX_MB = 10;
+const TIPOS_ARQ = ['application/pdf','image/png','image/jpeg','image/webp'];
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dig = s => String(s || '').replace(/\D/g, '');
 const ls = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
-  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  set(k,v){ try { localStorage.setItem(k,v); return true; } catch(e){ return false; } }
 };
-const statusLabel = s => STATUS_LABEL[s] || s;
-const badge = s => `<span class="st st-${STATUS_CLS[s]||''}">${esc(statusLabel(s))}</span>`;
-const timeLabel = t => t === 'FIN' ? 'Financeiro' : 'SAC';
-const copyBtn = v => v ? `<button class="cp" data-copy="${esc(v)}" title="Copiar">⧉</button>` : '';
 
-const configurado = !CONFIG.SUPABASE_URL.includes('COLE_');
-const sb = configurado ? supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY) : null;
+const now = () => Date.now();
+const iso = ms => new Date(ms).toISOString();
 
-const S = { tab: ls.get('fin_tab') === 'FIN' ? 'FIN' : 'SAC', pessoas: [], rows: [], total: 0, page: 0, loading: false, open: null, hist: [], anexos: [], all: [], shown: 30, seq: 0, rt: false };
-
-// ---------- utilidades ----------
-function fmtDT(iso){
-  if(!iso) return '';
-  return new Date(iso).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(',','');
+// ---------- datas e SLA ----------
+const BRT = 3 * 3600e3, DIA = 86400e3, H = 3600e3;
+function fmtDT(v){
+  if(!v) return '';
+  return new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(',','');
 }
+function bizMs(a, b){
+  if(!(b > a)) return 0;
+  let s = a - BRT; const e = b - BRT; let tot = 0;
+  while(s < e){
+    const fim = Math.min((Math.floor(s / DIA) + 1) * DIA, e);
+    const dow = new Date(s).getUTCDay();
+    if(dow !== 0 && dow !== 6) tot += fim - s;
+    s = fim;
+  }
+  return tot;
+}
+function addBiz(a, ms){
+  let s = a - BRT;
+  while(ms > 0){
+    const fimDia = (Math.floor(s / DIA) + 1) * DIA, dow = new Date(s).getUTCDay();
+    if(dow === 0 || dow === 6){ s = fimDia; continue; }
+    const d = Math.min(fimDia - s, ms); s += d; ms -= d;
+  }
+  return s + BRT;
+}
+function fmtDur(sec){
+  sec = Math.max(0, Math.round(sec));
+  if(sec < 3600) return Math.max(1, Math.round(sec / 60)) + 'min';
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
+  if(h >= 48) return `${Math.floor(h / 24)}d ${h % 24}h`;
+  return h + 'h' + (m ? String(m).padStart(2, '0') : '');
+}
+const hm = s => { const [h, m] = String(s || '16:00').split(':').map(Number); return (h * 60 + (m || 0)) * 60000; };
+const CORTE = hm('16:00');      // corte da empresa para urgência
+// Urgente: antes do corte vence no mesmo dia; depois, no próximo dia útil (horários por tipo)
+function urgDeadline(ms, tipo){
+  const mesmo = hm(tipo && tipo.urg_mesmo_dia || '16:00'), seguinte = hm(tipo && tipo.urg_dia_seguinte || '12:00');
+  const l = ms - BRT, dia = Math.floor(l / DIA) * DIA, dow = new Date(l).getUTCDay(), t = l - dia;
+  if(dow === 0 || dow === 6) return dia + (dow === 6 ? 2 : 1) * DIA + mesmo + BRT;
+  if(t < CORTE) return dia + mesmo + BRT;
+  return dia + (dow === 5 ? 3 : 1) * DIA + seguinte + BRT;
+}
+
+// =====================================================================
+// DADOS (Supabase). As regras de SLA, urgência e transferência rodam no banco.
+// =====================================================================
+let DB = { pessoas: [], tipos: [], chamados: [] };
+function err(e){ console.error(e); toast('Erro: ' + (e && e.message || e), 'bad', 6000); }
+async function fetchAll(q){
+  const out = [];
+  for(let from = 0; ; from += 1000){
+    const { data, error } = await q().range(from, from + 999);
+    if(error) throw error;
+    out.push(...data);
+    if(data.length < 1000) return out;
+  }
+}
+async function carregarBase(){
+  const [p, t] = await Promise.all([sb.from(T('pessoas')).select('*'), sb.from(T('sla')).select('*')]);
+  if(p.error) throw p.error; if(t.error) throw t.error;
+  DB.pessoas = p.data.map(x => ({ ...x, setor: x.setor || null, ativo: x.ativo !== false }));
+  DB.tipos = t.data.map(x => ({ ...x, setor: x.setor || 'FIN' }));
+}
+async function carregarChamados(){
+  const rows = await fetchAll(() => sb.from(T('chamados')).select('*').order('created_at', { ascending: false }).order('id', { ascending: false }));
+  rows.forEach(c => { c.setor = c.setor || 'FIN'; c.solicitante = c.solicitante || c.aberto_por; c.nfs = c.nfs || []; });
+  DB.chamados = rows;
+}
+// histórico e anexos do chamado aberto na tela
+const papelDe = h => h.papel || (h.time === 'FIN' ? 'set' : 'sol');
+async function carregarDetalhe(id){
+  const [h1, a1] = await Promise.all([
+    sb.from(T('historico')).select('*').eq('chamado_id', id).order('created_at').order('id'),
+    sb.from(T('anexos')).select('*').eq('chamado_id', id).order('created_at')
+  ]);
+  if(h1.error) err(h1.error); if(a1.error) err(a1.error);
+  S.hist = (h1.data || []).map(h => ({ ...h, papel: papelDe(h), autor_setor: h.autor_setor || h.time || null }));
+  S.anexos = (a1.data || []).map(a => ({ ...a, papel: papelDe(a) }));
+  S.histId = id;
+}
+const histRow = (chamado_id, autor, papel, tipo, texto) => ({ chamado_id, autor, papel, autor_setor: (pessoa(autor) || {}).setor || null, tipo, texto });
+async function hist(chamado_id, autor, papel, tipo, texto){
+  const r = await sb.from(T('historico')).insert(histRow(chamado_id, autor, papel, tipo, texto));
+  if(r.error) err(r.error);
+}
+async function recarregar(idDetalhe){
+  try { await carregarChamados(); } catch(e){ err(e); }
+  if(idDetalhe && S.open && S.open.id === idDetalhe) await carregarDetalhe(idDetalhe);
+  render();
+}
+const tipoDe = (setor, nome) => DB.tipos.find(t => t.setor === setor && t.tipo === nome);
+const pessoa = nome => DB.pessoas.find(p => p.nome === nome && p.ativo) || DB.pessoas.find(p => p.nome === nome);
+const nomesSetor = setor => [...new Set(DB.pessoas.filter(p => p.ativo && p.setor === setor).map(p => p.nome))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+const nomeLabel = (nome, setor) => setor ? `${nome} / ${SETORES[setor]}` : nome;
+
+// =====================================================================
+// INTERFACE
+// =====================================================================
+const S = { tab: 'MEUS', sub: 'recebidos', shown: PAGE, open: null, hist: [], anexos: [], histId: null, rt: false };
+try { const t = ls.get('cco_tab'); if(t) S.tab = t; S.sub = ls.get('cco_sub') || 'recebidos'; } catch(e){}
+
+const ctxSetor = () => S.tab === 'MEUS' ? null : S.tab;                   // setor da aba
+const ctxPapel = () => (S.tab === 'MEUS' || (S.tab === 'SAC' && S.sub === 'abertos')) ? 'sol' : 'set';
+
+let toastT;
+function toast(msg, kind = '', ms = 3500){
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast ' + kind; t.style.display = 'block';
+  clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', ms);
+}
+const copyBtn = v => v ? `<button class="cp" data-copy="${esc(v)}" title="Copiar">⧉</button>` : '';
 function maskDoc(v){
   const d = dig(v).slice(0,14);
   if(d.length <= 11) return d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
@@ -314,150 +441,47 @@ function validCNPJ(c){
 }
 const docValido = d => !d || (d.length === 11 ? validCPF(d) : d.length === 14 ? validCNPJ(d) : false);
 
-let toastT;
-function toast(msg, kind='', ms=3500){
-  const t = $('#toast'); t.textContent = msg; t.className = 'toast ' + kind; t.style.display = 'block';
-  clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', ms);
+// ---------- status e SLA na tela ----------
+const STATUS_CLS = {'Aberto':'aberto','Em andamento':'andamento','Aguardando':'aguardando','Devolvido':'devolvido','Finalizado':'finalizado','Cancelado':'cancelado'};
+function statusTxt(c){
+  if(c.status === 'Aguardando') return c.solicitante_setor === 'SAC' ? 'Aguardando SAC' : 'Aguardando solicitante';
+  if(c.status === 'Devolvido') return c.motivo_encerramento === 'nao_pertence' ? 'Devolvido ao SAC · não pertence' : 'Devolvido ao SAC';
+  if(c.status === 'Finalizado' && c.motivo_encerramento === 'nao_pertence') return 'Finalizado · não pertence';
+  return c.status;
 }
-function err(e){ console.error(e); toast('Erro: ' + (e?.message || e), 'bad'); }
+const STATUS_FILTRO = { Aguardando: 'Aguardando solicitante/SAC', Devolvido: 'Devolvido ao SAC' };
+const badge = c => `<span class="st st-${STATUS_CLS[c.status]}">${esc(statusTxt(c))}</span>`;
 
-function ask({title, label='', required=false, field='text', okLabel='Confirmar', danger=false, pessoas=null}){
-  return new Promise(res => {
-    const m = $('#askModal'), ta = $('#askText'), inp = $('#askInput'), ok = $('#askOk');
-    $('#askTitle').textContent = title;
-    $('#askLabel').innerHTML = label;
-    ta.style.display = field === 'text' ? '' : 'none';
-    inp.style.display = field === 'input' ? '' : 'none';
-    const el = field === 'text' ? ta : field === 'input' ? inp : null;
-    if(el){ el.value = ''; el.classList.remove('invalid'); }
-    ok.textContent = okLabel; ok.className = 'btn ' + (danger ? 'danger' : 'pri');
-    $('#askWhoWrap').style.display = pessoas ? '' : 'none';
-    if(pessoas){ fillWho($('#askWho'), pessoas, false); $('#askWho').classList.remove('invalid'); }
-    m.classList.add('show');
-    setTimeout(() => (pessoas ? $('#askWho') : (el || ok)).focus(), 50);
-    const done = v => { m.classList.remove('show'); ok.onclick = $('#askCancel').onclick = null; res(v); };
-    ok.onclick = () => {
-      const v = el ? el.value.trim() : '';
-      let nome = null;
-      if(pessoas){ nome = pegaNome($('#askWho')); if(!nome) return; }
-      if(required && !v){ el.classList.add('invalid'); el.focus(); return; }
-      done(pessoas ? { nome, texto: v } : v);
-    };
-    $('#askCancel').onclick = () => done(null);
-  });
-}
-
-// ---------- tipos de demanda (lidos da tabela de SLA) ----------
-function renderTipos(){
-  const f = $('#fTipo').value, n = $('#nTipo').value;
-  $('#fTipo').innerHTML = `<option value="">Todos</option>` + TIPOS.map(t => `<option ${t === f ? 'selected' : ''}>${esc(t)}</option>`).join('');
-  $('#nTipo').innerHTML = `<option value="">Selecione…</option>` + TIPOS.map(t => `<option ${t === n ? 'selected' : ''}>${esc(t)}</option>`).join('');
-}
-let TIPOS_URG = ['boleto não registrado', 'segunda via de boleto'];
-const permiteUrg = t => TIPOS_URG.includes(String(t || '').trim().toLowerCase());
-async function loadTipos(){
-  const { data, error } = await sb.from(T('sla')).select('*');
-  if(error || !data || !data.length) return;           // mantém a lista padrão
-  const nomes = data.map(r => String(r.tipo || '').trim()).filter(Boolean);
-  if('permite_urgente' in data[0]) TIPOS_URG = data.filter(r => r.permite_urgente).map(r => String(r.tipo).trim().toLowerCase());
-  TIPOS = nomes.filter(t => t !== 'Outros assuntos').sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  if(nomes.includes('Outros assuntos')) TIPOS.push('Outros assuntos');
-  renderTipos();
-}
-
-// ---------- pessoas (nome escolhido no momento da ação) ----------
-async function loadPessoas(){
-  const { data, error } = await sb.from(T('pessoas')).select('*').eq('ativo', true).order('nome');
-  if(error) return err(error);
-  S.pessoas = data; renderFiltroAberto(); fillWho($('#msgWho'), S.tab);
-}
-function fillWho(sel, time, keep = true){
-  const cur = keep ? sel.value : '';
-  sel.dataset.time = time;
-  sel.innerHTML = `<option value="">Seu nome…</option>` +
-    S.pessoas.filter(p => p.time === time).map(p => `<option ${p.nome === cur ? 'selected' : ''}>${esc(p.nome)}</option>`).join('') +
-    `<option value="__add">+ Adicionar nome…</option>`;
-}
-function renderFiltroAberto(){
-  const cur = $('#fAberto').value;
-  $('#fAberto').innerHTML = `<option value="">Todos</option>` +
-    S.pessoas.filter(p => p.time === 'SAC').map(p => `<option ${p.nome === cur ? 'selected' : ''}>${esc(p.nome)}</option>`).join('');
-}
-// "+ Adicionar nome…" em qualquer seletor de nome
-document.addEventListener('change', async e => {
-  const sel = e.target;
-  if(sel.tagName !== 'SELECT' || sel.value !== '__add') return;
-  const nome = (prompt(`Nome para o time ${timeLabel(sel.dataset.time)}:`) || '').trim();
-  if(!nome){ sel.value = ''; return; }
-  const { error } = await sb.from(T('pessoas')).insert({ nome, time: sel.dataset.time });
-  if(error && error.code !== '23505'){ sel.value = ''; return err(error); }
-  await loadPessoas();
-  fillWho(sel, sel.dataset.time, false); sel.value = nome;
-});
-function pegaNome(sel){
-  const v = sel.value;
-  if(!v || v === '__add'){ sel.classList.add('invalid'); sel.focus(); toast('Selecione seu nome', 'bad'); return null; }
-  sel.classList.remove('invalid'); return v;
-}
-
-// ---------- abas ----------
-function setTab(t){
-  S.tab = t; ls.set('fin_tab', t);
-  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
-  $('#btnNovo').style.display = t === 'SAC' ? '' : 'none';
-  closeDrawer();
-  if(sb) fillWho($('#msgWho'), t, false);
-}
-document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
-
-// ---------- SLA ----------
-// Horas corridas, sem sábado e domingo, no horário de Brasília (UTC-3)
-const BRT = 3 * 3600e3, DIA = 86400e3;
-const CORRENDO = ['Aberto','Em andamento'];
-function bizMs(a, b){
-  if(!(b > a)) return 0;
-  let s = a - BRT; const e = b - BRT; let tot = 0;
-  while(s < e){
-    const fim = Math.min((Math.floor(s / DIA) + 1) * DIA, e);
-    const dow = new Date(s).getUTCDay();
-    if(dow !== 0 && dow !== 6) tot += fim - s;
-    s = fim;
-  }
-  return tot;
-}
-function addBiz(a, ms){                    // data/hora em que "ms" úteis terminam
-  let s = a - BRT;
-  while(ms > 0){
-    const fimDia = (Math.floor(s / DIA) + 1) * DIA, dow = new Date(s).getUTCDay();
-    if(dow === 0 || dow === 6){ s = fimDia; continue; }
-    const d = Math.min(fimDia - s, ms); s += d; ms -= d;
-  }
-  return s + BRT;
-}
-function fmtDur(sec){
-  sec = Math.max(0, Math.round(sec));
-  if(sec < 3600) return Math.max(1, Math.round(sec / 60)) + 'min';
-  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
-  if(h >= 48) return `${Math.floor(h / 24)}d ${h % 24}h`;
-  return h + 'h' + (m ? String(m).padStart(2, '0') : '');
-}
-// Prazo do urgente: antes das 16h vence às 16h do dia; depois, meio-dia do próximo dia útil
-function urgDeadline(ms){
-  const l = ms - BRT, dia = Math.floor(l / DIA) * DIA, dow = new Date(l).getUTCDay(), min = (l - dia) / 60000;
-  if(dow === 0 || dow === 6) return dia + (dow === 6 ? 2 : 1) * DIA + 16 * 3600e3 + BRT;
-  if(min < 960) return dia + 16 * 3600e3 + BRT;
-  return dia + (dow === 5 ? 3 : 1) * DIA + 12 * 3600e3 + BRT;
+function slaInfo(c){
+  const total = (c.sla_horas || 24) * 3600;
+  let cons = Number(c.sla_consumido_seg || 0);
+  if(CORRENDO.includes(c.status) && c.sla_desde) cons += bizMs(Date.parse(c.sla_desde), now()) / 1000;
+  const r = { cons, resta: total - cons, total, vence: null };
+  if(c.status === 'Cancelado') return { ...r, cat:'cancelado', cls:'sla-x', txt:'Cancelado', ord: 9 };
+  if((c.status === 'Devolvido' || c.status === 'Finalizado') && c.motivo_encerramento === 'nao_pertence')
+    return { ...r, cat:'nao_pertence', cls:'sla-end', txt:'Não pertence ao setor', ord: 8 };
+  if(c.urgente && c.sla_vence_em) return slaUrgente(c, r);
+  const resta = r.resta, pct = cons / total;
+  if(c.status === 'Devolvido' || c.status === 'Finalizado')
+    return resta >= 0 ? { ...r, cat:'fim_ok', cls:'sla-end', txt:`✔ no prazo (${fmtDur(cons)})`, ord: 8 }
+                      : { ...r, cat:'fim_fora', cls:'sla-endbad', txt:`✖ fora do prazo (+${fmtDur(-resta)})`, ord: 8 };
+  const quanto = resta >= 0 ? 'faltam ' + fmtDur(resta) : 'atrasado ' + fmtDur(-resta);
+  if(c.status === 'Aguardando') return { ...r, cat:'pausado', cls:'sla-pause', txt:'⏸ pausado · ' + quanto, ord: 5 };
+  if(resta > 0) r.vence = addBiz(now(), resta * 1000);
+  if(pct > 1) return { ...r, cat:'atrasado', cls:'sla-late', txt: quanto, dot: true, ord: 1 };
+  if(pct >= 0.8) return { ...r, cat:'vencendo', cls:'sla-warn', txt: quanto, dot: true, ord: 2 };
+  return { ...r, cat:'noprazo', cls:'sla-ok', txt: quanto, dot: true, ord: 3 };
 }
 function slaUrgente(c, r){
-  const v = Date.parse(c.sla_vence_em), ini = Date.parse(c.sla_janela_inicio || c.created_at), agora = Date.now();
+  const v = Date.parse(c.sla_vence_em), ini = Date.parse(c.sla_janela_inicio || c.created_at), agora = now();
   const base = { ...r, urg: true, vence: v };
   if(c.status === 'Devolvido' || c.status === 'Finalizado'){
-    const p = Date.parse(c.sla_parado_em || c.devolvido_em || c.updated_at);
+    const p = Date.parse(c.sla_parado_em || c.devolvido_em || c.finalizado_em || c.updated_at);
     return p <= v ? { ...base, cat:'fim_ok', cls:'sla-end', txt:'✔ no prazo', ord: 8 }
                   : { ...base, cat:'fim_fora', cls:'sla-endbad', txt:`✖ fora do prazo (+${fmtDur((p - v) / 1000)})`, ord: 8 };
   }
   if(c.status === 'Aguardando'){
-    const p = Date.parse(c.sla_parado_em || agora);
+    const p = Date.parse(c.sla_parado_em || iso(agora));
     return { ...base, cat:'pausado', cls:'sla-pause', ord: 5, resta: (v - p) / 1000,
              txt: '⏸ pausado · ' + (p <= v ? 'faltam ' + fmtDur((v - p) / 1000) : 'atrasado ' + fmtDur((p - v) / 1000)) };
   }
@@ -467,115 +491,384 @@ function slaUrgente(c, r){
   if(pct >= 0.8) return { ...base, resta, cat:'vencendo', cls:'sla-warn', txt: quanto, dot: true, ord: 2 };
   return { ...base, resta, cat:'noprazo', cls:'sla-ok', txt: quanto, dot: true, ord: 3 };
 }
-// cat: noprazo | vencendo | atrasado | pausado | fim_ok | fim_fora | cancelado
-function slaInfo(c){
-  const total = (c.sla_horas || 24) * 3600;
-  let cons = Number(c.sla_consumido_seg || 0);
-  const corre = CORRENDO.includes(c.status) && c.sla_desde;
-  if(corre) cons += bizMs(Date.parse(c.sla_desde), Date.now()) / 1000;
-  const resta = total - cons, pct = cons / total;
-  const r = { cons, resta, pct, total, vence: null };
-  if(c.status === 'Cancelado') return { ...r, cat:'cancelado', cls:'sla-x', txt:'Cancelado', ord: 9 };
-  if(c.urgente && c.sla_vence_em) return slaUrgente(c, r);
-  if(c.status === 'Devolvido' || c.status === 'Finalizado')
-    return resta >= 0 ? { ...r, cat:'fim_ok', cls:'sla-end', txt:`✔ no prazo (${fmtDur(cons)})`, ord: 8 }
-                      : { ...r, cat:'fim_fora', cls:'sla-endbad', txt:`✖ fora do prazo (+${fmtDur(-resta)})`, ord: 8 };
-  const quanto = resta >= 0 ? 'faltam ' + fmtDur(resta) : 'atrasado ' + fmtDur(-resta);
-  if(c.status === 'Aguardando') return { ...r, cat:'pausado', cls:'sla-pause', txt:'⏸ pausado · ' + quanto, ord: 5 };
-  if(resta > 0) r.vence = addBiz(Date.now(), resta * 1000);
-  if(pct > 1) return { ...r, cat:'atrasado', cls:'sla-late', txt: quanto, dot: true, ord: 1 };
-  if(pct >= 0.8) return { ...r, cat:'vencendo', cls:'sla-warn', txt: quanto, dot: true, ord: 2 };
-  return { ...r, cat:'noprazo', cls:'sla-ok', txt: quanto, dot: true, ord: 3 };
-}
-const SLA_NOME = { noprazo:'No prazo', vencendo:'Vencendo', atrasado:'Atrasado', pausado:'Pausado', fim_ok:'Encerrado no prazo', fim_fora:'Encerrado fora do prazo', cancelado:'Cancelado' };
+const SLA_NOME = { noprazo:'No prazo', vencendo:'Vencendo', atrasado:'Atrasado', pausado:'Pausado', fim_ok:'Encerrado no prazo', fim_fora:'Encerrado fora do prazo', nao_pertence:'Não pertence ao setor', cancelado:'Cancelado' };
 const slaBadge = i => i.cat === 'cancelado' ? '<span class="sla-x">-</span>' : `<span class="sla ${i.cls}">${i.dot ? '<i></i>' : ''}${esc(i.txt)}</span>`;
 
+// ---------- abas ----------
+function precisaAtencao(c, aba, sub){
+  if(aba === 'SAC' && sub === 'abertos') return c.solicitante_setor === 'SAC' && (c.status === 'Devolvido' || c.status === 'Aguardando');
+  return c.setor === aba && ['Aberto','Em andamento'].includes(c.status);
+}
+function renderTabs(){
+  const n = (aba, sub) => DB.chamados.filter(c => precisaAtencao(c, aba, sub)).length || '';
+  const abas = [['MEUS','Meus chamados', '']].concat(SET_KEYS.map(k => [k, SETORES[k], k === 'SAC' ? (Number(n('SAC','recebidos') || 0) + Number(n('SAC','abertos') || 0)) || '' : n(k)]));
+  $('#tabs').innerHTML = abas.map(([k, l, c]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${esc(l)}<span class="cnt">${c}</span></button>`).join('');
+  $('#subTabs').style.display = S.tab === 'SAC' ? 'flex' : 'none';
+  $('#cntRec').textContent = n('SAC','recebidos'); $('#cntAb').textContent = n('SAC','abertos');
+  document.querySelectorAll('#subTabs button').forEach(b => b.classList.toggle('on', b.dataset.sub === S.sub));
+}
+$('#tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if(b) setTab(b.dataset.tab); };
+$('#subTabs').onclick = e => { const b = e.target.closest('[data-sub]'); if(!b) return; S.sub = b.dataset.sub; ls.set('cco_sub', S.sub); renderFiltros(); S.shown = PAGE; render(); };
+function setTab(t){
+  S.tab = t; ls.set('cco_tab', t); closeDrawer(); renderFiltros(); S.shown = PAGE; render();
+}
+
+// ---------- filtros ----------
+function renderFiltros(){
+  const setor = ctxSetor();
+  const solAtual = S.tab === 'MEUS' ? (ls.get('cco_meu_nome') || '') : '';
+  const pessoas = [...DB.pessoas].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  $('#fSol').innerHTML = `<option value="">Todos</option>` + pessoas.map(p => `<option value="${esc(p.nome)}" ${p.nome === solAtual ? 'selected' : ''}>${esc(nomeLabel(p.nome, p.setor))}</option>`).join('');
+  const comSetor = S.tab === 'MEUS' || (S.tab === 'SAC' && S.sub === 'abertos');
+  $('#fSetorWrap').style.display = comSetor ? '' : 'none';
+  $('#fSetor').innerHTML = `<option value="">Todos</option>` + SET_KEYS.map(k => `<option value="${k}">${esc(SETORES[k])}</option>`).join('');
+  $('#fStatus').innerHTML = `<option value="ativos">Ativos</option><option value="">Todos</option>` + STATUS.map(s => `<option value="${s}">${esc(STATUS_FILTRO[s] || s)}</option>`).join('');
+  const tipos = [...new Set(DB.tipos.filter(t => !setor || comSetor || t.setor === setor).map(t => t.tipo))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  $('#fTipo').innerHTML = `<option value="">Todos</option>` + tipos.map(t => `<option>${esc(t)}</option>`).join('');
+  $('#btnNovo').style.display = (S.tab === 'MEUS' || (S.tab === 'SAC' && S.sub === 'abertos')) ? '' : 'none';
+}
+['#fSol','#fSetor','#fStatus','#fTipo','#fDe','#fAte','#fSla','#fUrg','#fOrdem'].forEach(s => $(s).onchange = () => {
+  if(s === '#fSol' && S.tab === 'MEUS') ls.set('cco_meu_nome', $('#fSol').value);
+  S.shown = PAGE; render();
+});
+let buscaT; $('#fBusca').oninput = () => { clearTimeout(buscaT); buscaT = setTimeout(() => { S.shown = PAGE; render(); }, 250); };
+$('#btnLimpar').onclick = () => {
+  ['#fBusca','#fSetor','#fTipo','#fDe','#fAte','#fSla','#fUrg'].forEach(s => $(s).value = '');
+  $('#fStatus').value = 'ativos'; $('#fOrdem').value = 'urgencia';
+  if(S.tab !== 'MEUS') $('#fSol').value = '';
+  S.shown = PAGE; render();
+};
+
 // ---------- lista ----------
-function buildQuery(){
-  let q = sb.from(T('chamados')).select('*').order('created_at', { ascending:false }).order('id', { ascending:false });
-  const st = $('#fStatus').value;
-  if(st === 'ativos') q = q.not('status', 'in', '("Finalizado","Cancelado")');
-  else if(st) q = q.eq('status', st);
-  if($('#fTipo').value) q = q.eq('tipo', $('#fTipo').value);
-  if($('#fAberto').value) q = q.eq('aberto_por', $('#fAberto').value);
-  if($('#fDe').value) q = q.gte('created_at', $('#fDe').value + 'T00:00:00-03:00');
-  if($('#fAte').value) q = q.lte('created_at', $('#fAte').value + 'T23:59:59.999-03:00');
-  const raw = $('#fBusca').value.replace(/[,()*%{}"\\:]/g, ' ').trim();
-  if(raw){
-    const d = dig(raw);
-    const ors = [`cliente_nome.ilike.*${raw}*`, `codigo_cliente.ilike.*${raw}*`, `protocolo.ilike.*${raw}*`, `nfs_busca.ilike.*${raw}*`];
-    if(d.length >= 3){ ors.push(`documento.ilike.*${d}*`, `telefone.ilike.*${d}*`); }
-    q = q.or(ors.join(','));
+function baseLista(){
+  if(S.tab === 'MEUS') return DB.chamados;
+  if(S.tab === 'SAC' && S.sub === 'abertos') return DB.chamados.filter(c => c.solicitante_setor === 'SAC');
+  return DB.chamados.filter(c => c.setor === S.tab);
+}
+function filtrar(){
+  let rows = baseLista();
+  const st = $('#fStatus').value, sol = $('#fSol').value, set = $('#fSetor').value, tp = $('#fTipo').value;
+  if(st === 'ativos') rows = rows.filter(c => !FINAIS.includes(c.status)); else if(st) rows = rows.filter(c => c.status === st);
+  if(sol) rows = rows.filter(c => c.solicitante === sol);
+  if(set && $('#fSetorWrap').style.display !== 'none') rows = rows.filter(c => c.setor === set);
+  if(tp) rows = rows.filter(c => c.tipo === tp);
+  const de = $('#fDe').value, ate = $('#fAte').value;
+  if(de) rows = rows.filter(c => Date.parse(c.created_at) >= Date.parse(de + 'T00:00:00-03:00'));
+  if(ate) rows = rows.filter(c => Date.parse(c.created_at) <= Date.parse(ate + 'T23:59:59.999-03:00'));
+  const q = $('#fBusca').value.trim().toLowerCase();
+  if(q){
+    const d = dig(q);
+    rows = rows.filter(c => [c.protocolo, c.cliente_nome, c.codigo_cliente, c.pedido, (c.nfs || []).join(' ')].some(v => String(v || '').toLowerCase().includes(q))
+      || (d.length >= 3 && [c.documento, c.telefone].some(v => String(v || '').includes(d))));
   }
-  return q;
-}
-async function fetchAll(q){
-  const out = [];
-  for(let from = 0; ; from += 1000){
-    const { data, error } = await q().range(from, from + 999);
-    if(error) throw error;
-    out.push(...data);
-    if(data.length < 1000) return out;
-  }
-}
-async function load(manterPagina = false){
-  if(!sb) return;
-  const seq = ++S.seq;
-  try {
-    const data = await fetchAll(buildQuery);
-    if(seq !== S.seq) return;          // uma busca mais nova já chegou
-    S.all = data; if(!manterPagina) S.shown = PAGE;
-    renderList();
-  } catch(e){ err(e); }
-}
-function visiveis(){
-  const f = $('#fSla').value;
-  let rows = S.all.map(r => ({ r, s: slaInfo(r) }));
-  if(f) rows = rows.filter(x => x.s.cat === f);
-  if($('#fUrg').value) rows = rows.filter(x => x.r.urgente);
-  const grupo = x => x.r.urgente && x.s.ord <= 5 ? 0 : 1;   // urgentes em aberto sempre no topo
+  let lista = rows.map(r => ({ r, s: slaInfo(r) }));
+  if($('#fSla').value) lista = lista.filter(x => x.s.cat === $('#fSla').value);
+  if($('#fUrg').value) lista = lista.filter(x => x.r.urgente);
+  const grupo = x => x.r.urgente && x.s.ord <= 5 ? 0 : 1;
   if($('#fOrdem').value === 'urgencia')
-    rows.sort((a, b) => grupo(a) - grupo(b) || a.s.ord - b.s.ord || (a.s.ord <= 5 ? a.s.resta - b.s.resta : Date.parse(b.r.created_at) - Date.parse(a.r.created_at)));
-  return rows;
+    lista.sort((a, b) => grupo(a) - grupo(b) || a.s.ord - b.s.ord || (a.s.ord <= 5 ? a.s.resta - b.s.resta : Date.parse(b.r.created_at) - Date.parse(a.r.created_at)));
+  else lista.sort((a, b) => Date.parse(b.r.created_at) - Date.parse(a.r.created_at));
+  return lista;
 }
-function renderList(){
-  const lista = visiveis();
-  S.rows = lista.slice(0, S.shown);
-  S.total = lista.length;
-  $('#rows').innerHTML = !S.rows.length
-    ? `<tr><td colspan="10" class="empty">Nenhum chamado encontrado</td></tr>`
-    : S.rows.map(({ r, s }) => `<tr data-id="${r.id}" class="${r.urgente && !FINAIS.includes(r.status) ? 'urg' : ''}">
-        <td class="mono nw"><b>${esc(r.protocolo)}</b>${copyBtn(r.protocolo)}${r.urgente ? '<div><span class="urgtag">URGENTE</span></div>' : ''}</td>
-        <td class="nw">${fmtDT(r.created_at)}</td>
-        <td>${esc(r.cliente_nome) || '<span class="sub">-</span>'}</td>
-        <td class="nw">${r.documento ? esc(maskDoc(r.documento)) + copyBtn(r.documento) : '<span class="sub">-</span>'}</td>
-        <td class="nw">${r.codigo_cliente ? esc(r.codigo_cliente) + copyBtn(r.codigo_cliente) : '<span class="sub">-</span>'}</td>
-        <td>${(r.nfs || []).length ? r.nfs.map(n => `<span class="nw">${esc(n)}${copyBtn(n)}</span>`).join(' ') : '<span class="sub">-</span>'}</td>
-        <td>${esc(r.tipo)}</td>
-        <td>${badge(r.status)}</td>
-        <td>${slaBadge(s)}</td>
-        <td>${esc(r.aberto_por)}</td></tr>`).join('');
-  $('#count').textContent = S.total ? `${S.rows.length} de ${S.total} chamados` : '';
-  $('#more').style.display = S.rows.length < S.total ? '' : 'none';
+function render(){
+  renderTabs();
+  const lista = filtrar(), vis = lista.slice(0, S.shown);
+  $('#rows').innerHTML = !vis.length ? `<tr><td colspan="10" class="empty">Nenhum chamado encontrado</td></tr>` : vis.map(({ r, s }) => `
+    <tr data-id="${r.id}" class="${r.urgente && !FINAIS.includes(r.status) ? 'urg' : ''}">
+      <td class="nw"><span class="mono"><b>${esc(r.protocolo)}</b></span>${copyBtn(r.protocolo)}<div class="sub">${fmtDT(r.created_at)}</div>${r.urgente ? '<div><span class="urgtag">URGENTE</span></div>' : ''}</td>
+      <td class="nw">${esc(r.solicitante)}${r.solicitante_setor ? `<div class="sub">${esc(SETORES[r.solicitante_setor])}</div>` : ''}</td>
+      <td><span class="setor">${esc(SETORES[r.setor])}</span>${r.transferido_de ? `<div class="sub">↪ de ${esc(SETORES[r.transferido_de])}</div>` : ''}</td>
+      <td>${esc(r.cliente_nome) || '<span class="sub">-</span>'}</td>
+      <td class="nw">${r.documento ? esc(maskDoc(r.documento)) + copyBtn(r.documento) : '<span class="sub">-</span>'}</td>
+      <td class="nw">${r.codigo_cliente ? esc(r.codigo_cliente) + copyBtn(r.codigo_cliente) : '<span class="sub">-</span>'}</td>
+      <td>${(r.nfs || []).map(n => `<span class="nw">${esc(n)}${copyBtn(n)}</span>`).join(' ') || ''}${r.pedido ? `<div class="sub nw">Ped. ${esc(r.pedido)}${copyBtn(r.pedido)}</div>` : ''}${!(r.nfs || []).length && !r.pedido ? '<span class="sub">-</span>' : ''}</td>
+      <td>${esc(r.tipo)}</td>
+      <td>${badge(r)}${r.reaberturas ? `<div class="sub">reaberto ${r.reaberturas}x</div>` : ''}</td>
+      <td>${slaBadge(s)}</td></tr>`).join('');
+  $('#count').textContent = lista.length ? `${vis.length} de ${lista.length} chamados` : '';
+  $('#more').style.display = vis.length < lista.length ? '' : 'none';
+  if(S.open && $('#drawer').classList.contains('show')) renderDetail();
 }
 $('#rows').onclick = e => { const tr = e.target.closest('tr[data-id]'); if(tr) openDetail(+tr.dataset.id, true); };
-$('#more').onclick = () => { S.shown += PAGE; renderList(); };
-$('#fSla').onchange = $('#fOrdem').onchange = $('#fUrg').onchange = () => { S.shown = PAGE; renderList(); };
-setInterval(() => { if(sb && !S.rt) load(true); else if(S.all.length) renderList(); if(S.open && $('#drawer').classList.contains('show')) atualizaSlaDetalhe(); }, 60000);
+$('#more').onclick = () => { S.shown += PAGE; render(); };
 
-let buscaT;
-$('#fBusca').oninput = () => { clearTimeout(buscaT); buscaT = setTimeout(load, 400); };
-['#fStatus','#fTipo','#fAberto','#fDe','#fAte'].forEach(s => $(s).onchange = () => load());
-$('#btnLimpar').onclick = () => { $('#fBusca').value=''; $('#fStatus').value='ativos'; $('#fTipo').value=''; $('#fAberto').value=''; $('#fDe').value=''; $('#fAte').value=''; $('#fSla').value=''; $('#fUrg').value=''; $('#fOrdem').value='urgencia'; load(); };
+// ---------- detalhe ----------
+async function openDetail(id, doClique = false){
+  S.open = DB.chamados.find(c => c.id === id);
+  if(!S.open) return;
+  if(S.histId !== id){ S.hist = []; S.anexos = []; }
+  fillWho($('#msgWho'), nomesChat(S.open));
+  renderDetail(); showDrawer();
+  await carregarDetalhe(id); renderDetail(); const db = $('#dBody'); db.scrollTop = db.scrollHeight;
+  if(doClique && ctxPapel() === 'set' && S.open.status === 'Aberto' && S.open.setor === ctxSetor()) ACOES.assumir();
+}
+// Quem pode agir do lado do solicitante: o próprio solicitante (ou qualquer pessoa do SAC, se foi o SAC que abriu)
+const nomesSolicitante = c => c.solicitante_setor === 'SAC' ? nomesSetor('SAC') : [c.solicitante];
+function nomesChat(c){ return ctxPapel() === 'set' ? nomesSetor(c.setor) : nomesSolicitante(c); }
+const souSetor = c => ctxPapel() === 'set' && c.setor === ctxSetor();
+const podeReabrir = c => c.status === 'Finalizado' && c.motivo_encerramento === 'resolvida' && c.finalizado_em
+  && bizMs(Date.parse(c.finalizado_em), now()) <= 5 * 24 * H;
+
+function acoes(c){
+  const a = [];
+  if(souSetor(c)){
+    if(c.status === 'Aberto') a.push(['Assumir chamado','pri','assumir']);
+    if(c.status === 'Em andamento'){ a.push(['Demanda resolvida','pri','resolver']); a.push(['Não pertence ao setor','','naoPertence']); a.push([c.solicitante_setor === 'SAC' ? 'Aguardando SAC' : 'Aguardando solicitante','','aguardar']); }
+    if(c.status === 'Aguardando') a.push(['Retomar atendimento','pri','retomar']);
+    if(c.setor === 'SAC' && ['Aberto','Em andamento','Aguardando'].includes(c.status)) a.push(['Transferir para outro setor','teal','transferir']);
+    if(['Aberto','Em andamento','Aguardando'].includes(c.status)) a.push(['Cancelar chamado','danger','cancelar']);
+  } else if(ctxPapel() === 'sol'){
+    if(c.status === 'Aguardando') a.push(['Devolver ao setor','pri','responder']);
+    if(c.status === 'Devolvido'){
+      a.push(['Finalizar chamado','pri','finalizar']);
+      if(c.motivo_encerramento === 'nao_pertence') a.push(['Redirecionar para outro setor','teal','redirecionar']);
+      else a.push(['Devolver ao setor','','reenviar']);
+    }
+    if(podeReabrir(c)) a.push(['Reabrir chamado','pri','reabrir']);
+    if(!FINAIS.includes(c.status)) a.push(['Cancelar chamado','danger','cancelar']);
+  }
+  return a;
+}
+function renderDetail(){
+  const c = DB.chamados.find(x => x.id === (S.open && S.open.id)); if(!c) return;
+  S.open = c;
+  const final = FINAIS.includes(c.status);
+  $('#dTitle').innerHTML = `<span class="mono">${esc(c.protocolo)}</span>${copyBtn(c.protocolo)} ${badge(c)}${c.urgente ? ' <span class="urgtag">URGENTE</span>' : ''}`;
+  const linha = (k, v, cls = '') => `<div class="${cls}"><div class="k">${k}</div><div class="v">${v || '-'}</div></div>`;
+  const doc = c.documento ? `${esc(maskDoc(c.documento))}${copyBtn(c.documento)}${docValido(c.documento) ? '' : ' <span class="warn">inválido</span>'}` : '';
+  const nfs = (c.nfs || []).map(n => `<span class="mono">${esc(n)}</span>${copyBtn(n)}`).join('&nbsp;&nbsp;');
+  const s = slaInfo(c);
+  let encerr = '';
+  if(c.status === 'Cancelado') encerr = linha('Cancelado', `${fmtDT(c.cancelado_em)} por ${esc(c.cancelado_por)}<div class="sub">Motivo: ${esc(c.motivo_cancelamento)}</div>`, 'full');
+  else if(c.motivo_encerramento && ['Devolvido','Finalizado'].includes(c.status))
+    encerr = linha('Encerramento do setor', `${c.motivo_encerramento === 'nao_pertence' ? 'Não pertence ao setor' : 'Demanda resolvida'} · ${esc(c.devolvido_por || c.finalizado_por || '')}${c.status === 'Finalizado' ? `<div class="sub">Finalizado ${fmtDT(c.finalizado_em)} por ${esc(c.finalizado_por)}</div>` : ''}`, 'full');
+  const hist = S.histId === c.id ? S.hist : [];
+  const anexos = S.histId === c.id ? S.anexos : [];
+  const papelTxt = h => h.papel === 'set' ? (h.autor_setor ? SETORES[h.autor_setor] : 'Setor') : 'Solicitante' + (h.autor_setor ? ' · ' + SETORES[h.autor_setor] : '');
+  $('#dBody').innerHTML = `
+    <div class="info">
+      ${linha('Setor', `<span class="setor">${esc(SETORES[c.setor])}</span>${c.transferido_de ? `<div class="sub">Transferido de ${esc(SETORES[c.transferido_de])} por ${esc(c.transferido_por)} · ${fmtDT(c.transferido_em)}</div>` : ''}`)}
+      ${linha('Tipo', esc(c.tipo))}
+      ${linha('Solicitante', `${esc(nomeLabel(c.solicitante, c.solicitante_setor))}<div class="sub">${fmtDT(c.created_at)}</div>`)}
+      ${linha('Assumido por', c.em_andamento_por ? `${esc(c.em_andamento_por)}<div class="sub">${fmtDT(c.em_andamento_em)}</div>` : '')}
+      ${linha('Cliente', esc(c.cliente_nome))}
+      ${linha('Telefone', c.telefone ? esc(maskTel(c.telefone)) + copyBtn(c.telefone) : '')}
+      ${linha('CPF / CNPJ', doc)}
+      ${linha('Código do cliente', c.codigo_cliente ? esc(c.codigo_cliente) + copyBtn(c.codigo_cliente) : '')}
+      ${linha('Notas fiscais', nfs)}
+      ${linha('Nº do pedido', c.pedido ? esc(c.pedido) + copyBtn(c.pedido) : '')}
+      <div><div class="k">SLA (${c.urgente ? 'urgente' : c.sla_horas + 'h'})</div><div class="v">${slaBadge(s)}${s.vence && !['Devolvido','Finalizado','Cancelado'].includes(c.status) ? `<div class="sub">vence ${fmtDT(s.vence)}</div>` : ''}</div></div>
+      ${linha('Reaberturas', c.reaberturas ? String(c.reaberturas) : '0')}
+      ${c.observacao ? `<div class="full"><div class="k">Observação</div><div class="obs">${esc(c.observacao)}</div></div>` : ''}
+      ${encerr}
+    </div>
+    <div class="acts">${acoes(c).map(([l, cls, act]) => `<button class="btn ${cls}" data-act="${act}">${l}</button>`).join('')}</div>
+    <h4>Anexos (${anexos.length})</h4>
+    ${anexos.length ? `<div class="anexos">${anexos.map(a => `<div class="anx">
+        <span class="ic ${a.tipo_mime === 'application/pdf' ? '' : 'img'}">${a.tipo_mime === 'application/pdf' ? 'PDF' : 'IMG'}</span>
+        <div class="anx-i"><div class="anx-n" title="${esc(a.nome_arquivo)}">${esc(a.nome_arquivo)}</div>
+        <div class="sub">${fmtSize(a.tamanho || 0)} · ${esc(a.autor)} · ${fmtDT(a.created_at)}</div></div>
+        <button class="btn" data-dl="${a.id}">Baixar</button></div>`).join('')}</div>`
+      : `<div class="sub" style="margin-bottom:18px">${final ? 'Nenhum anexo.' : 'Nenhum anexo. Use o 📎 abaixo para anexar.'}</div>`}
+    <h4>Histórico</h4>
+    ${hist.map(h => h.tipo === 'status'
+      ? `<div class="ev"><span>${esc(h.texto)}</span><small>${esc(h.autor)} · ${fmtDT(h.created_at)}</small></div>`
+      : `<div class="msg ${h.papel}"><div class="mh"><b>${esc(h.autor)}</b> <span class="tm">${esc(papelTxt(h))}</span><small>${fmtDT(h.created_at)}</small></div><div class="mb">${esc(h.texto)}</div></div>`).join('') || '<div class="sub">Sem registros</div>'}`;
+  // o chat fica disponível para quem tem relação com o chamado nesta aba
+  const temVoz = !final && (souSetor(c) || ctxPapel() === 'sol');
+  $('#composer').style.display = temVoz ? '' : 'none';
+}
+function showDrawer(){ $('#drawer').classList.add('show'); $('#ov').classList.add('show'); const db = $('#dBody'); db.scrollTop = db.scrollHeight; }
+function closeDrawer(){ $('#drawer').classList.remove('show'); $('#ov').classList.remove('show'); S.open = null; }
+$('#dClose').onclick = closeDrawer; $('#ov').onclick = closeDrawer;
+
+// ---------- seletores de nome ----------
+function fillWho(sel, nomes, keep = false){
+  const cur = keep ? sel.value : '';
+  sel.innerHTML = (nomes.length === 1 ? '' : `<option value="">Seu nome…</option>`) +
+    nomes.map(n => `<option value="${esc(n)}" ${n === cur ? 'selected' : ''}>${esc(nomeLabel(n, (pessoa(n) || {}).setor))}</option>`).join('');
+  sel.classList.remove('invalid');
+}
+function pegaNome(sel){
+  const v = sel.value;
+  if(!v){ sel.classList.add('invalid'); sel.focus(); toast('Selecione seu nome', 'bad'); return null; }
+  sel.classList.remove('invalid'); return v;
+}
+
+// ---------- janela de confirmação ----------
+function ask({ title, label = '', required = false, field = 'text', okLabel = 'Confirmar', danger = false, nomes = null }){
+  return new Promise(res => {
+    const m = $('#askModal'), ta = $('#askText'), inp = $('#askInput'), ok = $('#askOk');
+    $('#askTitle').textContent = title; $('#askLabel').innerHTML = label;
+    ta.style.display = field === 'text' ? '' : 'none'; inp.style.display = field === 'input' ? '' : 'none';
+    const el = field === 'text' ? ta : field === 'input' ? inp : null;
+    if(el){ el.value = ''; el.classList.remove('invalid'); }
+    ok.textContent = okLabel; ok.className = 'btn ' + (danger ? 'danger' : 'pri');
+    $('#askWhoWrap').style.display = nomes ? '' : 'none';
+    if(nomes) fillWho($('#askWho'), nomes);
+    m.classList.add('show');
+    setTimeout(() => (nomes && nomes.length > 1 ? $('#askWho') : (el || ok)).focus(), 50);
+    const done = v => { m.classList.remove('show'); ok.onclick = $('#askCancel').onclick = null; res(v); };
+    ok.onclick = () => {
+      const v = el ? el.value.trim() : '';
+      let nome = null;
+      if(nomes){ nome = pegaNome($('#askWho')); if(!nome) return; }
+      if(required && !v){ el.classList.add('invalid'); el.focus(); return; }
+      done(nomes ? { nome, texto: v } : v);
+    };
+    $('#askCancel').onclick = () => done(null);
+  });
+}
+
+// ---------- ações ----------
+// Executa uma mudança de status com trava e registra no histórico
+async function mudar(patch, esperado, texto, nome, papel, msg){
+  const c = S.open;
+  const { data, error } = await sb.from(T('chamados')).update(patch).eq('id', c.id).eq('status', esperado || c.status).select();
+  if(error){ err(error); return false; }
+  if(!data.length){ toast('Este chamado foi alterado por outra pessoa. Atualizando…', 'bad'); await recarregar(c.id); return false; }
+  const regs = [];
+  if(msg) regs.push(histRow(c.id, nome, papel, 'mensagem', msg));
+  regs.push(histRow(c.id, nome, papel, 'status', texto));
+  const r = await sb.from(T('historico')).insert(regs);
+  if(r.error) err(r.error);
+  await recarregar(c.id); return true;
+}
+const voltaAoSac = c => c.solicitante_setor === 'SAC';
+const ACOES = {
+  async assumir(){
+    const c = S.open;
+    const r = await ask({ title:'Assumir chamado', label:`Quem do ${esc(SETORES[c.setor])} está assumindo este chamado?`, field:'none', nomes: nomesSetor(c.setor), okLabel:'Assumir' });
+    if(r) mudar({ status:'Em andamento', em_andamento_por: r.nome, em_andamento_em: iso(now()) }, 'Aberto', 'Chamado em andamento', r.nome, 'set');
+  },
+  async resolver(){
+    const c = S.open, sac = voltaAoSac(c);
+    const r = await ask({ title:'Demanda resolvida', label: sac ? 'O chamado volta para o SAC finalizar com o cliente. As informações ficam no chat.' : `O chamado será <b>finalizado</b> e ${esc(c.solicitante)} verá a resposta em Meus chamados.`, field:'none', nomes: nomesSetor(c.setor), okLabel: sac ? 'Devolver ao SAC' : 'Finalizar' });
+    if(!r) return;
+    if(sac) mudar({ status:'Devolvido', motivo_encerramento:'resolvida', devolvido_por: r.nome, devolvido_em: iso(now()) }, 'Em andamento', 'Demanda resolvida · devolvido ao SAC', r.nome, 'set');
+    else mudar({ status:'Finalizado', motivo_encerramento:'resolvida', finalizado_por: r.nome, finalizado_em: iso(now()) }, 'Em andamento', 'Demanda resolvida · chamado finalizado', r.nome, 'set');
+  },
+  async naoPertence(){
+    const c = S.open, sac = voltaAoSac(c);
+    const r = await ask({ title:'Não pertence ao setor', label: sac ? 'O chamado volta para o SAC redirecionar ao setor correto.' : `O chamado será <b>finalizado</b>. ${esc(c.solicitante)} precisa abrir um novo chamado no setor correto. Explique no chat qual é o setor.`, field:'none', nomes: nomesSetor(c.setor), okLabel: sac ? 'Devolver ao SAC' : 'Encerrar' });
+    if(!r) return;
+    if(sac) mudar({ status:'Devolvido', motivo_encerramento:'nao_pertence', devolvido_por: r.nome, devolvido_em: iso(now()) }, 'Em andamento', 'Não pertence ao setor · devolvido ao SAC', r.nome, 'set');
+    else mudar({ status:'Finalizado', motivo_encerramento:'nao_pertence', finalizado_por: r.nome, finalizado_em: iso(now()) }, 'Em andamento', 'Não pertence ao setor · chamado finalizado', r.nome, 'set');
+  },
+  async aguardar(){
+    const c = S.open, quem = voltaAoSac(c) ? 'SAC' : 'solicitante';
+    const r = await ask({ title:`Aguardando ${quem}`, label:`A pergunta vai para o ${quem} e o SLA fica pausado até a resposta.`, field:'none', nomes: nomesSetor(c.setor), okLabel:'Confirmar' });
+    if(r) mudar({ status:'Aguardando' }, 'Em andamento', `Aguardando ${quem}`, r.nome, 'set');
+  },
+  async retomar(){
+    const c = S.open;
+    const r = await ask({ title:'Retomar atendimento', field:'none', nomes: nomesSetor(c.setor), okLabel:'Retomar' });
+    if(r) mudar({ status:'Em andamento' }, 'Aguardando', 'Atendimento retomado', r.nome, 'set');
+  },
+  async responder(){
+    const c = S.open;
+    const r = await ask({ title:'Devolver ao setor', label:`O chamado volta para o ${esc(SETORES[c.setor])} e o SLA continua de onde parou.`, field:'none', nomes: nomesSolicitante(c), okLabel:'Devolver ao setor' });
+    if(r) mudar({ status:'Em andamento' }, 'Aguardando', 'Devolvido ao setor com resposta do solicitante', r.nome, 'sol');
+  },
+  async reenviar(){
+    const c = S.open;
+    const r = await ask({ title:'Devolver ao setor', label:`O chamado volta para o ${esc(SETORES[c.setor])}. Explique no chat o que ainda falta.`, field:'none', nomes: nomesSolicitante(c), okLabel:'Devolver ao setor' });
+    if(r) mudar({ status:'Em andamento', motivo_encerramento: null }, 'Devolvido', 'Devolvido ao setor pelo SAC', r.nome, 'sol');
+  },
+  async finalizar(){
+    const c = S.open;
+    const r = await ask({ title:'Finalizar chamado', label:'Confirma que a devolutiva foi enviada ao cliente ou a quem pediu?', field:'none', nomes: nomesSolicitante(c), okLabel:'Finalizar' });
+    if(r) mudar({ status:'Finalizado', finalizado_por: r.nome, finalizado_em: iso(now()) }, 'Devolvido', 'Chamado finalizado', r.nome, 'sol');
+  },
+  async reabrir(){
+    const c = S.open;
+    const r = await ask({ title:'Reabrir chamado', label:`O chamado volta para o ${esc(SETORES[c.setor])} e o SLA continua de onde parou. Por que está reabrindo?`, required:true, nomes: nomesSolicitante(c), okLabel:'Reabrir' });
+    if(!r) return;
+    mudar({ status:'Em andamento', motivo_encerramento: null, finalizado_por: null, finalizado_em: null, reaberturas: (c.reaberturas || 0) + 1 }, 'Finalizado', `Chamado reaberto (${(c.reaberturas || 0) + 1}ª vez)`, r.nome, 'sol', 'Motivo da reabertura: ' + r.texto);
+  },
+  async cancelar(){
+    const c = S.open, set = souSetor(c);
+    const r = await ask({ title:'Cancelar chamado', label:'Motivo do cancelamento (obrigatório):', required:true, nomes: set ? nomesSetor(c.setor) : nomesSolicitante(c), okLabel:'Cancelar chamado', danger:true });
+    if(r) mudar({ status:'Cancelado', cancelado_por: r.nome, cancelado_em: iso(now()), motivo_cancelamento: r.texto }, c.status, 'Chamado cancelado', r.nome, set ? 'set' : 'sol');
+  },
+  transferir(){ abrirTransferencia('transferir'); },
+  redirecionar(){ abrirTransferencia('redirecionar'); }
+};
+$('#dBody').onclick = e => {
+  const d = e.target.closest('[data-dl]'); if(d) return baixarAnexo(+d.dataset.dl);
+  const b = e.target.closest('[data-act]'); if(b) ACOES[b.dataset.act]();
+};
+
+// ---------- transferir (SAC) ----------
+let TR = null;
+function opcoesTipo(sel, setor, atual = ''){
+  const tipos = DB.tipos.filter(t => t.setor === setor).map(t => t.tipo).sort((a, b) => a === 'Outros assuntos' ? 1 : b === 'Outros assuntos' ? -1 : a.localeCompare(b, 'pt-BR'));
+  sel.innerHTML = `<option value="">${setor ? 'Selecione…' : 'Escolha o setor primeiro'}</option>` + tipos.map(t => `<option ${t === atual ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  sel.disabled = !setor;
+}
+function abrirTransferencia(modo){
+  const c = S.open; TR = { modo };
+  $('#trTitle').textContent = modo === 'transferir' ? 'Transferir chamado' : 'Redirecionar chamado';
+  $('#trSub').textContent = modo === 'transferir'
+    ? `O chamado vai para outro setor. O SLA do novo tipo conta desde a abertura (${fmtDT(c.created_at)}), e a resposta final vai direto para ${c.solicitante}.`
+    : `O chamado vai para o setor correto. O SLA do novo tipo conta desde a abertura (${fmtDT(c.created_at)}).`;
+  fillWho($('#trWho'), nomesSetor('SAC'));
+  const destinos = SET_KEYS.filter(k => k !== 'SAC' && k !== c.setor);
+  $('#trSetor').innerHTML = `<option value="">Selecione…</option>` + destinos.map(k => `<option value="${k}">${esc(SETORES[k])}</option>`).join('');
+  opcoesTipo($('#trTipo'), ''); $('#trPed').value = c.pedido || ''; $('#trUrg').checked = false;
+  atualizaTr(); $('#trModal').classList.add('show');
+}
+function atualizaTr(){
+  const setor = $('#trSetor').value, tp = tipoDe(setor, $('#trTipo').value);
+  $('#trPedWrap').style.display = setor === 'FAT' ? '' : 'none';
+  const pode = !!(tp && tp.permite_urgente);
+  $('#trUrgWrap').style.display = pode ? '' : 'none'; if(!pode) $('#trUrg').checked = false;
+  if($('#trUrg').checked){
+    const v = urgDeadline(Date.parse(S.open.created_at), tp);
+    $('#trUrgHint').innerHTML = `Prazo contado da abertura: até ${fmtDT(v)}${v < now() ? ' · <b style="color:#FCA5A5">já nasce atrasado</b>' : ''}`;
+  } else $('#trUrgHint').textContent = '';
+}
+$('#trSetor').onchange = () => { opcoesTipo($('#trTipo'), $('#trSetor').value); atualizaTr(); };
+$('#trTipo').onchange = $('#trUrg').onchange = atualizaTr;
+$('#trCancel').onclick = () => $('#trModal').classList.remove('show');
+$('#trOk').onclick = async () => {
+  const nome = pegaNome($('#trWho')); if(!nome) return;
+  const setor = $('#trSetor').value, tipo = $('#trTipo').value;
+  if(!setor){ $('#trSetor').classList.add('invalid'); return; }
+  if(!tipo){ $('#trTipo').classList.add('invalid'); return; }
+  const c = S.open, tp = tipoDe(setor, tipo), de = c.setor, urg = !!($('#trUrg').checked && tp && tp.permite_urgente);
+  // o banco recalcula o SLA e o prazo de urgência do novo tipo, contados desde a abertura
+  const patch = { setor, tipo, status: 'Aberto', urgente: urg, motivo_encerramento: null,
+    em_andamento_por: null, em_andamento_em: null, devolvido_por: null, devolvido_em: null,
+    transferido_de: de, transferido_por: nome, transferido_em: iso(now()) };
+  if(setor === 'FAT') patch.pedido = $('#trPed').value.trim() || c.pedido || null;
+  $('#trOk').disabled = true;
+  const { data, error } = await sb.from(T('chamados')).update(patch).eq('id', c.id).eq('status', c.status).select();
+  $('#trOk').disabled = false;
+  if(error) return err(error);
+  if(!data.length){ toast('Este chamado foi alterado por outra pessoa.', 'bad'); return recarregar(c.id); }
+  await hist(c.id, nome, 'sol', 'status', `${TR.modo === 'transferir' ? 'Transferido' : 'Redirecionado'} de ${SETORES[de]} para ${SETORES[setor]} · ${tipo}${data[0].urgente ? ' · URGENTE' : ''}`);
+  $('#trModal').classList.remove('show');
+  toast(`Chamado enviado para ${SETORES[setor]}`, 'ok');
+  if(TR.modo === 'transferir') closeDrawer();
+  await recarregar(c.id);
+};
+
+// ---------- chat ----------
+async function enviarMsg(){
+  const t = $('#msg').value.trim(); if(!t){ $('#msg').focus(); return; }
+  const n = pegaNome($('#msgWho')); if(!n) return;
+  $('#btnMsg').disabled = true;
+  const r = await sb.from(T('historico')).insert(histRow(S.open.id, n, ctxPapel(), 'mensagem', t));
+  $('#btnMsg').disabled = false;
+  if(r.error) return err(r.error);
+  $('#msg').value = ''; await carregarDetalhe(S.open.id); render(); const db = $('#dBody'); db.scrollTop = db.scrollHeight;
+}
+$('#btnMsg').onclick = enviarMsg;
+$('#msg').onkeydown = e => { if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviarMsg(); };
 
 // ---------- anexos ----------
-const BUCKET = 'fin-anexos';
-const PASTA = CONFIG.PREFIX ? 'hml' : 'prod';
-const MAX_MB = 10;
-const TIPOS_ARQ = ['application/pdf','image/png','image/jpeg','image/webp'];
 const fmtSize = b => b < 1048576 ? Math.max(1, Math.round(b/1024)) + ' KB' : (b/1048576).toFixed(1).replace('.', ',') + ' MB';
-const safeName = n => n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.\-]+/g, '_').slice(-120);
-
 function validaArquivos(files){
   for(const f of files){
     if(f.size > MAX_MB * 1048576){ toast(`${f.name}: acima de ${MAX_MB} MB`, 'bad'); return false; }
@@ -583,15 +876,16 @@ function validaArquivos(files){
   }
   return true;
 }
-async function subirAnexos(chamadoId, files, nome, time){
+const safeName = n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.\-]+/g, '_').slice(-120);
+async function subirAnexos(chamadoId, files, nome, papel){
   let ok = 0;
   for(const f of files){
     const caminho = `${PASTA}/${chamadoId}/${Date.now()}_${safeName(f.name)}`;
     const up = await sb.storage.from(BUCKET).upload(caminho, f, { contentType: f.type, upsert: false });
     if(up.error){ err(up.error); continue; }
-    const r = await sb.from(T('anexos')).insert({ chamado_id: chamadoId, autor: nome, time, nome_arquivo: f.name, caminho, tamanho: f.size, tipo_mime: f.type });
+    const r = await sb.from(T('anexos')).insert({ chamado_id: chamadoId, autor: nome, papel, nome_arquivo: f.name, caminho, tamanho: f.size, tipo_mime: f.type });
     if(r.error){ err(r.error); continue; }
-    await sb.from(T('historico')).insert({ chamado_id: chamadoId, autor: nome, time, tipo: 'status', texto: `Anexou: ${f.name}` });
+    await hist(chamadoId, nome, papel, 'status', `Anexou: ${f.name}`);
     ok++;
   }
   return ok;
@@ -607,237 +901,19 @@ $('#btnAnexo').onclick = () => { if(pegaNome($('#msgWho'))) $('#fileIn').click()
 $('#fileIn').onchange = async e => {
   const files = [...e.target.files]; e.target.value = '';
   if(!files.length || !S.open) return;
-  const n = pegaNome($('#msgWho')); if(!n) return;
-  if(!validaArquivos(files)) return;
+  const n = pegaNome($('#msgWho')); if(!n || !validaArquivos(files)) return;
   $('#btnAnexo').disabled = true; toast('Enviando anexo…');
-  const ok = await subirAnexos(S.open.id, files, n, S.tab);
+  const ok = await subirAnexos(S.open.id, files, n, ctxPapel());
   $('#btnAnexo').disabled = false;
   if(ok) toast(`${ok} arquivo(s) anexado(s)`, 'ok');
-  openDetail(S.open.id);
-};
-
-// ---------- detalhe ----------
-async function openDetail(id, doClique = false){
-  const [r1, r2, r3] = await Promise.all([
-    sb.from(T('chamados')).select('*').eq('id', id).single(),
-    sb.from(T('historico')).select('*').eq('chamado_id', id).order('created_at').order('id'),
-    sb.from(T('anexos')).select('*').eq('chamado_id', id).order('created_at')
-  ]);
-  if(r1.error || r2.error) return err(r1.error || r2.error);
-  if(r3.error) err(r3.error);
-  S.open = r1.data; S.hist = r2.data; S.anexos = r3.data || [];
-  const i = S.all.findIndex(r => r.id === id);
-  if(i >= 0){ S.all[i] = r1.data; renderList(); }
-
-  renderDetail(); showDrawer();
-  // Financeiro abriu um chamado novo: pergunta quem assume e passa para Em andamento
-  if(doClique && S.tab === 'FIN' && S.open.status === 'Aberto') ACOES.assumir();
-}
-
-function acoes(c){
-  const a = [];
-  if(S.tab === 'FIN'){
-    if(c.status === 'Aberto') a.push(['Assumir chamado','pri','assumir']);
-    if(c.status === 'Em andamento'){ a.push(['Demanda resolvida','pri','devolver']); a.push(['Aguardando SAC/cliente','','aguardar']); }
-    if(c.status === 'Aguardando') a.push(['Retomar atendimento','pri','retomar']);
-  } else {
-    if(c.status === 'Aguardando') a.push(['Devolver ao Financeiro','pri','responder']);
-    if(c.status === 'Devolvido'){ a.push(['Finalizar chamado','pri','finalizar']); a.push(['Devolver ao Financeiro','','reenviar']); }
-    if(c.urgente && !FINAIS.includes(c.status)) a.push(['Remover urgência','','desurgente']);
-    if(!FINAIS.includes(c.status)) a.push(['Cancelar chamado','danger','cancelar']);
-  }
-  return a;
-}
-
-function renderDetail(){
-  const c = S.open, final = FINAIS.includes(c.status);
-  $('#dTitle').innerHTML = `<span class="mono">${esc(c.protocolo)}</span>${copyBtn(c.protocolo)} ${badge(c.status)}${c.urgente ? ' <span class="urgtag">URGENTE</span>' : ''}`;
-  const doc = c.documento ? `${esc(maskDoc(c.documento))}${copyBtn(c.documento)}${docValido(c.documento) ? '' : ' <span class="warn">inválido</span>'}` : '-';
-  const nfs = (c.nfs || []).length ? c.nfs.map(n => `<span class="mono">${esc(n)}</span>${copyBtn(n)}`).join('&nbsp;&nbsp;') : '-';
-  const linha = (k, v, cls='') => `<div class="${cls}"><div class="k">${k}</div><div class="v">${v || '-'}</div></div>`;
-  let extra = '';
-  if(c.status === 'Cancelado') extra = linha('Cancelado', `${fmtDT(c.cancelado_em)} por ${esc(c.cancelado_por)}<div class="sub">Motivo: ${esc(c.motivo_cancelamento)}</div>`, 'full');
-  if(c.status === 'Finalizado') extra = linha('Finalizado', `${fmtDT(c.finalizado_em)} por ${esc(c.finalizado_por)}`, 'full');
-
-  const hist = S.hist.map(h => h.tipo === 'status'
-    ? `<div class="ev"><span>${esc(h.texto)}</span><small>${esc(h.autor)} · ${timeLabel(h.time)} · ${fmtDT(h.created_at)}</small></div>`
-    : `<div class="msg ${h.time === 'FIN' ? 'fin' : 'sac'}"><div class="mh"><b>${esc(h.autor)}</b> <span class="tm">${timeLabel(h.time)}</span><small>${fmtDT(h.created_at)}</small></div><div class="mb">${esc(h.texto)}</div></div>`
-  ).join('');
-
-  $('#dBody').innerHTML = `
-    <div class="info">
-      ${linha('Tipo', esc(c.tipo))}
-      ${linha('Abertura', `${fmtDT(c.created_at)}<div class="sub">por ${esc(c.aberto_por) || '-'}</div>`)}
-      ${linha('Cliente', esc(c.cliente_nome))}
-      ${linha('Telefone', c.telefone ? esc(maskTel(c.telefone)) + copyBtn(c.telefone) : '')}
-      ${linha('CPF / CNPJ', doc)}
-      ${linha('Código do cliente', c.codigo_cliente ? esc(c.codigo_cliente) + copyBtn(c.codigo_cliente) : '')}
-      ${linha('Notas fiscais', nfs, 'full')}
-      <div><div class="k">SLA (${c.urgente ? 'urgente' : c.sla_horas + 'h'})</div><div class="v" id="slaDet"></div></div>
-      ${linha('Em andamento por', c.em_andamento_por ? `${esc(c.em_andamento_por)}<div class="sub">${fmtDT(c.em_andamento_em)}</div>` : '')}
-      ${c.observacao ? `<div class="full"><div class="k">Observação</div><div class="obs">${esc(c.observacao)}</div></div>` : ''}
-      ${extra}
-    </div>
-    <div class="acts">${acoes(c).map(([l, cls, act]) => `<button class="btn ${cls}" data-act="${act}">${l}</button>`).join('')}</div>
-    <h4>Anexos (${S.anexos.length})</h4>
-    ${S.anexos.length ? `<div class="anexos">${S.anexos.map(a => `<div class="anx">
-        <span class="ic ${a.tipo_mime === 'application/pdf' ? '' : 'img'}">${a.tipo_mime === 'application/pdf' ? 'PDF' : 'IMG'}</span>
-        <div class="anx-i"><div class="anx-n" title="${esc(a.nome_arquivo)}">${esc(a.nome_arquivo)}</div>
-        <div class="sub">${fmtSize(a.tamanho || 0)} · ${esc(a.autor)} · ${timeLabel(a.time)} · ${fmtDT(a.created_at)}</div></div>
-        <button class="btn" data-dl="${a.id}">Baixar</button></div>`).join('')}</div>`
-      : `<div class="sub" style="margin-bottom:18px">${final ? 'Nenhum anexo.' : 'Nenhum anexo. Use o 📎 abaixo para anexar.'}</div>`}
-    <h4>Histórico</h4>
-    ${hist || '<div class="sub">Sem registros</div>'}`;
-  $('#composer').style.display = final ? 'none' : '';
-  atualizaSlaDetalhe();
-  const db = $('#dBody'); db.scrollTop = db.scrollHeight;
-}
-function atualizaSlaDetalhe(){
-  const el = $('#slaDet'); if(!el || !S.open) return;
-  const i = slaInfo(S.open);
-  el.innerHTML = slaBadge(i) + (i.vence ? `<div class="sub">vence ${fmtDT(new Date(i.vence).toISOString())}</div>` : '');
-}
-
-// Muda status com trava de concorrência e registra no histórico
-async function mudarStatus(novo, fields, texto, msg, n){
-  const c = S.open;
-  const { data, error } = await sb.from(T('chamados')).update({ status: novo, ...fields }).eq('id', c.id).eq('status', c.status).select();
-  if(error){ err(error); return false; }
-  if(!data.length){ toast('Este chamado foi alterado por outra pessoa. Atualizando…', 'bad'); await openDetail(c.id); return false; }
-  const regs = [];
-  if(msg) regs.push({ chamado_id: c.id, autor: n, time: S.tab, tipo: 'mensagem', texto: msg });
-  regs.push({ chamado_id: c.id, autor: n, time: S.tab, tipo: 'status', texto });
-  const r = await sb.from(T('historico')).insert(regs);
-  if(r.error) err(r.error);
-  await openDetail(c.id);
-  if(!$('#drawer').classList.contains('show')){ renderDetail(); showDrawer(); }
-  return true;
-}
-
-const now = () => new Date().toISOString();
-const ACOES = {
-  async assumir(){
-    const r = await ask({ title:'Assumir chamado', label:'Quem do Financeiro está assumindo este chamado?', field:'none', pessoas:'FIN', okLabel:'Assumir' });
-    if(r) mudarStatus('Em andamento', { em_andamento_em: now(), em_andamento_por: r.nome }, 'Chamado em andamento', null, r.nome);
-  },
-  async devolver(){
-    const r = await ask({ title:'Demanda resolvida', label:'O chamado volta para o SAC enviar a devolutiva ao cliente. As informações ficam no chat do chamado.', field:'none', pessoas:'FIN', okLabel:'Devolver ao SAC' });
-    if(r) mudarStatus('Devolvido', { devolvido_em: now(), devolvido_por: r.nome }, 'Demanda resolvida · devolvido ao SAC', null, r.nome);
-  },
-  async aguardar(){
-    const r = await ask({ title:'Aguardando SAC/cliente', label:'O chamado vai para o SAC e o SLA fica pausado até a resposta.', field:'none', pessoas:'FIN', okLabel:'Enviar ao SAC' });
-    if(r) mudarStatus('Aguardando', {}, 'Aguardando SAC/cliente', null, r.nome);
-  },
-  async retomar(){
-    const r = await ask({ title:'Retomar atendimento', field:'none', pessoas:'FIN', okLabel:'Retomar' });
-    if(r) mudarStatus('Em andamento', {}, 'Atendimento retomado', null, r.nome);
-  },
-  async finalizar(){
-    const r = await ask({ title:'Finalizar chamado', label:'Confirma que a devolutiva foi enviada ao cliente?', field:'none', pessoas:'SAC', okLabel:'Finalizar' });
-    if(r) mudarStatus('Finalizado', { finalizado_em: now(), finalizado_por: r.nome }, 'Chamado finalizado', null, r.nome);
-  },
-  async responder(){
-    const r = await ask({ title:'Devolver ao Financeiro', label:'O chamado volta para o Financeiro e o SLA continua de onde parou.', field:'none', pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
-    if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro com resposta do SAC', null, r.nome);
-  },
-  async reenviar(){
-    const r = await ask({ title:'Devolver ao Financeiro', label:'O chamado volta para o Financeiro e o SLA continua de onde parou.', field:'none', pessoas:'SAC', okLabel:'Devolver ao Financeiro' });
-    if(r) mudarStatus('Em andamento', {}, 'Devolvido ao Financeiro', null, r.nome);
-  },
-  async desurgente(){
-    const r = await ask({ title:'Remover urgência', label:'O chamado volta para o SLA normal do tipo de demanda, contado desde a abertura.', field:'none', pessoas:'SAC', okLabel:'Remover urgência', danger:true });
-    if(!r) return;
-    const id = S.open.id;
-    const { data, error } = await sb.from(T('chamados')).update({ urgente: false }).eq('id', id).eq('urgente', true).select();
-    if(error) return err(error);
-    if(data.length){
-      const h = await sb.from(T('historico')).insert({ chamado_id: id, autor: r.nome, time: 'SAC', tipo: 'status', texto: 'Urgência removida' });
-      if(h.error) err(h.error);
-      toast('Urgência removida', 'ok');
-    }
-    openDetail(id);
-  },
-  async cancelar(){
-    const r = await ask({ title:'Cancelar chamado', label:'Motivo do cancelamento (obrigatório):', required:true, pessoas:'SAC', okLabel:'Cancelar chamado', danger:true });
-    if(r) mudarStatus('Cancelado', { cancelado_em: now(), cancelado_por: r.nome, motivo_cancelamento: r.texto }, 'Chamado cancelado', null, r.nome);
-  }
-};
-$('#dBody').onclick = e => {
-  const d = e.target.closest('[data-dl]'); if(d) return baixarAnexo(+d.dataset.dl);
-  const b = e.target.closest('[data-act]'); if(b) ACOES[b.dataset.act]();
-};
-
-async function enviarMsg(){
-  const t = $('#msg').value.trim(); if(!t){ $('#msg').focus(); return; }
-  const n = pegaNome($('#msgWho')); if(!n) return;
-  $('#btnMsg').disabled = true;
-  const { error } = await sb.from(T('historico')).insert({ chamado_id: S.open.id, autor: n, time: S.tab, tipo: 'mensagem', texto: t });
-  $('#btnMsg').disabled = false;
-  if(error) return err(error);
-  $('#msg').value = '';
-  openDetail(S.open.id);
-}
-$('#btnMsg').onclick = enviarMsg;
-$('#msg').onkeydown = e => { if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviarMsg(); };
-
-function showDrawer(){ $('#drawer').classList.add('show'); $('#ov').classList.add('show'); }
-function closeDrawer(){ $('#drawer').classList.remove('show'); $('#ov').classList.remove('show'); S.open = null; }
-$('#dClose').onclick = closeDrawer; $('#ov').onclick = closeDrawer;
-
-// copiar
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-copy]'); if(!b) return;
-  e.stopPropagation();
-  navigator.clipboard.writeText(b.dataset.copy).then(() => toast('Copiado: ' + b.dataset.copy, 'ok'));
-}, true);
-
-// ---------- CSV ----------
-$('#btnCsv').onclick = () => { $('#csvModal').classList.add('show'); };
-$('#csvCancel').onclick = () => $('#csvModal').classList.remove('show');
-function csvCell(v){
-  if(v === null || v === undefined) return '';
-  const s = String(v);
-  return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-}
-const horasBR = sec => (Math.round(sec / 360) / 10).toFixed(1).replace('.', ',');
-$('#csvOk').onclick = async () => {
-  const de = $('#csvDe').value, ate = $('#csvAte').value;
-  if(de && ate && de > ate){ toast('A data inicial é maior que a final', 'bad'); return; }
-  const btn = $('#csvOk'); btn.disabled = true;
-  try {
-    const rows = await fetchAll(() => {
-      let q = sb.from(T('chamados')).select('*').order('created_at').order('id');
-      if(de) q = q.gte('created_at', de + 'T00:00:00-03:00');
-      if(ate) q = q.lte('created_at', ate + 'T23:59:59.999-03:00');
-      return q;
-    });
-    if(!rows.length){ toast('Nenhum chamado no período', 'bad'); return; }
-    const cab = ['Protocolo','Abertura','Aberto por','Cliente','CPF/CNPJ','Código','NFs','Tipo','Urgente','Observação','Status','Assumido por','Assumido em','Devolvido em','Devolvido por','Finalizado em','Finalizado por','Cancelado em','Cancelado por','Motivo do cancelamento','SLA (h)','Prazo urgente','Tempo consumido (h)','Situação do SLA'];
-    const linhas = rows.map(c => {
-      const s = slaInfo(c);
-      return [c.protocolo, fmtDT(c.created_at), c.aberto_por, c.cliente_nome, maskDoc(c.documento), c.codigo_cliente, (c.nfs || []).join(', '), c.tipo, c.urgente ? 'Sim' : 'Não', c.observacao, statusLabel(c.status),
-        c.em_andamento_por, fmtDT(c.em_andamento_em), fmtDT(c.devolvido_em), c.devolvido_por, fmtDT(c.finalizado_em), c.finalizado_por, fmtDT(c.cancelado_em), c.cancelado_por, c.motivo_cancelamento,
-        c.urgente ? '' : c.sla_horas, c.urgente ? fmtDT(c.sla_vence_em) : '', horasBR(s.cons), SLA_NOME[s.cat]].map(csvCell).join(';');
-    });
-    const csv = '﻿' + [cab.join(';'), ...linhas].join('\r\n');
-    const sufixo = de || ate ? `_${de || 'inicio'}_a_${ate || 'hoje'}` : '_todos';
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = `chamados_financeiro${sufixo}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    $('#csvModal').classList.remove('show');
-    toast(`${rows.length} chamados exportados`, 'ok');
-  } catch(e){ err(e); }
-  finally { btn.disabled = false; }
+  await recarregar(S.open.id);
 };
 
 // ---------- novo chamado ----------
 const NF = { list: [] };
 function renderNf(){ $('#nfChips').innerHTML = NF.list.map((v,i) => `<span class="chip">${esc(v)}<button data-rm="${i}" title="Remover">×</button></span>`).join(''); }
 function addNfFromInput(){
-  $('#nNf').value.split(/[,;\s]+/).map(s => s.replace(/[^\w.\-\/]/g,'')).filter(Boolean)
-    .forEach(v => { if(!NF.list.includes(v)) NF.list.push(v); });
+  $('#nNf').value.split(/[,;\s]+/).map(s => s.replace(/[^\w.\-\/]/g,'')).filter(Boolean).forEach(v => { if(!NF.list.includes(v)) NF.list.push(v); });
   $('#nNf').value = ''; renderNf();
 }
 $('#nNf').onkeydown = e => { if(e.key === 'Enter' || e.key === ','){ e.preventDefault(); addNfFromInput(); } };
@@ -845,120 +921,168 @@ $('#nNf').onblur = addNfFromInput;
 $('#nfChips').onclick = e => { const b = e.target.closest('[data-rm]'); if(b){ NF.list.splice(+b.dataset.rm, 1); renderNf(); } };
 $('#nTel').oninput = e => e.target.value = maskTel(e.target.value);
 $('#nDoc').oninput = e => { e.target.value = maskDoc(e.target.value); $('#nDocHint').textContent=''; $('#nDocHint').className='hint'; e.target.classList.remove('invalid'); };
-$('#nDoc').onblur = () => {
-  const d = dig($('#nDoc').value);
-  if(d && !docValido(d)){ $('#nDocHint').textContent = 'CPF/CNPJ inválido'; $('#nDocHint').className = 'hint bad'; $('#nDoc').classList.add('invalid'); }
-};
-function atualizaUrgForm(){
-  const pode = permiteUrg($('#nTipo').value);
-  $('#nUrgWrap').style.display = pode ? '' : 'none';
-  if(!pode) $('#nUrg').checked = false;
-  $('#nUrgHint').textContent = $('#nUrg').checked ? 'Prazo do Financeiro: até ' + fmtDT(new Date(urgDeadline(Date.now())).toISOString()) : '';
-}
-$('#nTipo').onchange = () => { $('#nObsHint').textContent = $('#nTipo').value === 'Outros assuntos' ? 'Obrigatória para Outros assuntos' : ''; atualizaUrgForm(); };
-$('#nUrg').onchange = atualizaUrgForm;
+$('#nDoc').onblur = () => { const d = dig($('#nDoc').value); if(d && !docValido(d)){ $('#nDocHint').textContent = 'CPF/CNPJ inválido'; $('#nDocHint').className = 'hint bad'; $('#nDoc').classList.add('invalid'); } };
 
+function atualizaNovo(){
+  const quem = pessoa($('#nWho').value), setor = $('#nSetor').value;
+  // pode abrir para qualquer setor, menos o seu
+  const destinos = SET_KEYS.filter(k => !quem || k !== quem.setor);
+  $('#nSetor').innerHTML = `<option value="">Selecione…</option>` + destinos.map(k => `<option value="${k}" ${k === setor ? 'selected' : ''}>${esc(SETORES[k])}</option>`).join('');
+  const s2 = $('#nSetor').value;
+  if(s2 !== $('#nTipo').dataset.setor){ opcoesTipo($('#nTipo'), s2); $('#nTipo').dataset.setor = s2; }
+  $('#nPedWrap').style.display = s2 === 'FAT' ? '' : 'none';
+  const tp = tipoDe(s2, $('#nTipo').value), pode = !!(tp && tp.permite_urgente);
+  $('#nUrgWrap').style.display = pode ? '' : 'none'; if(!pode) $('#nUrg').checked = false;
+  $('#nUrgHint').textContent = $('#nUrg').checked ? `Prazo do ${SETORES[s2]}: até ${fmtDT(urgDeadline(now(), tp))}` : '';
+  $('#nObsHint').textContent = $('#nTipo').value === 'Outros assuntos' ? 'Obrigatória para Outros assuntos' : '';
+}
+['#nWho','#nSetor','#nTipo','#nUrg'].forEach(s => $(s).onchange = atualizaNovo);
 function abrirNovo(){
-  fillWho($('#nWho'), 'SAC', false); $('#nWho').classList.remove('invalid');
-  ['#nNome','#nTel','#nDoc','#nCod','#nNf','#nObs'].forEach(s => { $(s).value=''; $(s).classList.remove('invalid'); });
-  $('#nTipo').value=''; $('#nUrg').checked = false; atualizaUrgForm(); $('#nFiles').value=''; $('#nDocHint').textContent=''; $('#nObsHint').textContent=''; NF.list = []; renderNf();
-  $('#novoModal').classList.add('show'); setTimeout(() => $('#nNome').focus(), 50);
+  const doSac = S.tab === 'SAC';
+  const nomes = doSac ? nomesSetor('SAC') : [...DB.pessoas].filter(p => p.ativo).map(p => p.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  fillWho($('#nWho'), nomes);
+  const lembrado = ls.get('cco_meu_nome');
+  if(lembrado && nomes.includes(lembrado)) $('#nWho').value = lembrado;
+  ['#nNome','#nTel','#nDoc','#nCod','#nNf','#nObs','#nPed'].forEach(s => { $(s).value=''; $(s).classList.remove('invalid'); });
+  $('#nSetor').innerHTML = ''; $('#nTipo').dataset.setor = '-'; $('#nUrg').checked = false; $('#nFiles').value = '';
+  $('#nDocHint').textContent = ''; NF.list = []; renderNf(); atualizaNovo();
+  $('#novoModal').classList.add('show');
 }
 $('#btnNovo').onclick = abrirNovo;
 $('#nCancel').onclick = () => $('#novoModal').classList.remove('show');
-
-async function buscarDuplicados(doc, nfs){
-  const base = () => sb.from(T('chamados')).select('id,protocolo,tipo,status,created_at').not('status','in','("Finalizado","Cancelado")').limit(10);
-  const res = [];
-  if(doc){ const { data } = await base().eq('documento', doc); if(data) res.push(...data); }
-  if(nfs.length){ const { data } = await base().overlaps('nfs', nfs); if(data) res.push(...data); }
-  const vistos = new Set();
-  return res.filter(r => !vistos.has(r.id) && vistos.add(r.id));
+function buscarDuplicados(doc, nfs){
+  return DB.chamados.filter(c => !FINAIS.includes(c.status) && ((doc && c.documento === doc) || (nfs.length && (c.nfs || []).some(n => nfs.includes(n)))));
 }
-
 $('#nSalvar').onclick = async () => {
   const n = pegaNome($('#nWho')); if(!n) return;
   addNfFromInput();
-  const doc = dig($('#nDoc').value), tipo = $('#nTipo').value, obs = $('#nObs').value.trim();
+  const setor = $('#nSetor').value, tipo = $('#nTipo').value;
+  if(!setor){ $('#nSetor').classList.add('invalid'); toast('Escolha o setor de destino', 'bad'); return; }
+  if(!tipo){ $('#nTipo').classList.add('invalid'); toast('Escolha o tipo de demanda', 'bad'); return; }
+  const doc = dig($('#nDoc').value), obs = $('#nObs').value.trim();
   if(doc && !docValido(doc)){ $('#nDoc').classList.add('invalid'); $('#nDocHint').textContent='CPF/CNPJ inválido'; $('#nDocHint').className='hint bad'; $('#nDoc').focus(); return; }
   if(tipo === 'Outros assuntos' && !obs){ $('#nObs').classList.add('invalid'); $('#nObsHint').className='hint bad'; $('#nObs').focus(); return; }
   const arquivos = [...$('#nFiles').files];
   if(arquivos.length && !validaArquivos(arquivos)) return;
-
-  const btn = $('#nSalvar'); btn.disabled = true;
-  const dups = await buscarDuplicados(doc, NF.list);
+  const dups = buscarDuplicados(doc, NF.list);
   if(dups.length){
     $('#novoModal').classList.remove('show');
-    const ok = await ask({
-      title:'Possível duplicidade', field:'none', okLabel:'Abrir mesmo assim',
-      label:`Já existe chamado ativo para este CPF/CNPJ ou NF:<ul>${dups.map(d => `<li><b>${esc(d.protocolo)}</b> · ${esc(d.tipo || 'sem tipo')} · ${esc(statusLabel(d.status))} · ${fmtDT(d.created_at)}</li>`).join('')}</ul>Deseja abrir um novo mesmo assim?`
-    });
-    if(ok === null){ $('#novoModal').classList.add('show'); btn.disabled = false; return; }
+    const ok = await ask({ title:'Possível duplicidade', field:'none', okLabel:'Abrir mesmo assim',
+      label:`Já existe chamado ativo para este CPF/CNPJ ou NF:<ul>${dups.map(d => `<li><b>${esc(d.protocolo)}</b> · ${esc(SETORES[d.setor])} · ${esc(d.tipo)} · ${esc(statusTxt(d))}</li>`).join('')}</ul>Deseja abrir um novo mesmo assim?` });
+    if(ok === null){ $('#novoModal').classList.add('show'); return; }
   }
-
-  const { data, error } = await sb.from(T('chamados')).insert({
-    aberto_por: n,
-    cliente_nome: $('#nNome').value.trim() || null,
-    telefone: dig($('#nTel').value) || null,
-    documento: doc || null,
-    codigo_cliente: $('#nCod').value.trim() || null,
-    nfs: NF.list,
-    tipo: tipo || null,
-    observacao: obs || null,
-    urgente: $('#nUrg').checked && permiteUrg(tipo)
-  }).select().single();
+  const btn = $('#nSalvar'); btn.disabled = true;
+  const { data: c, error } = await sb.from(T('chamados')).insert({ solicitante: n, aberto_por: n, setor, tipo, urgente: $('#nUrg').checked,
+    cliente_nome: $('#nNome').value.trim() || null, telefone: dig($('#nTel').value) || null, documento: doc || null,
+    codigo_cliente: $('#nCod').value.trim() || null, nfs: NF.list, pedido: setor === 'FAT' ? ($('#nPed').value.trim() || null) : null, observacao: obs || null }).select().single();
   btn.disabled = false;
   if(error){ $('#novoModal').classList.add('show'); return err(error); }
-  await sb.from(T('historico')).insert({ chamado_id: data.id, autor: n, time: 'SAC', tipo: 'status', texto: data.urgente ? 'Chamado aberto como URGENTE' : 'Chamado aberto' });
-  if(arquivos.length){ toast('Enviando anexos…'); await subirAnexos(data.id, arquivos, n, 'SAC'); }
+  await hist(c.id, n, 'sol', 'status', c.urgente ? 'Chamado aberto como URGENTE' : 'Chamado aberto');
+  if(arquivos.length){ toast('Enviando anexos…'); await subirAnexos(c.id, arquivos, n, 'sol'); }
+  await recarregar();
+  if(S.tab === 'MEUS'){ ls.set('cco_meu_nome', n); renderFiltros(); }
   $('#novoModal').classList.remove('show');
-  toast(`Chamado ${data.protocolo} aberto`, 'ok');
-  await load();
-  openDetail(data.id);
+  toast(`Chamado ${c.protocolo} aberto para ${SETORES[setor]}`, 'ok');
+  openDetail(c.id);
 };
 
+// ---------- CSV ----------
+$('#btnCsv').onclick = () => {
+  $('#csvSub').textContent = (S.tab === 'MEUS' ? 'Todos os chamados' : S.tab === 'SAC' && S.sub === 'abertos' ? 'Chamados abertos pelo SAC' : 'Chamados do ' + SETORES[S.tab]) + '. Deixe as datas em branco para baixar tudo; a data é a de abertura.';
+  $('#csvModal').classList.add('show');
+};
+$('#csvCancel').onclick = () => $('#csvModal').classList.remove('show');
+const csvCell = v => { if(v === null || v === undefined) return ''; const s = String(v); return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const horasBR = sec => (Math.round(sec / 360) / 10).toFixed(1).replace('.', ',');
+$('#csvOk').onclick = () => {
+  const de = $('#csvDe').value, ate = $('#csvAte').value;
+  if(de && ate && de > ate){ toast('A data inicial é maior que a final', 'bad'); return; }
+  let rows = baseLista();
+  if(de) rows = rows.filter(c => Date.parse(c.created_at) >= Date.parse(de + 'T00:00:00-03:00'));
+  if(ate) rows = rows.filter(c => Date.parse(c.created_at) <= Date.parse(ate + 'T23:59:59.999-03:00'));
+  if(!rows.length){ toast('Nenhum chamado no período', 'bad'); return; }
+  rows = [...rows].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+  const cab = ['Protocolo','Abertura','Solicitante','Setor do solicitante','Setor atual','Transferido de','Tipo','Urgente','Prazo urgente','Cliente','CPF/CNPJ','Código','NFs','Nº pedido','Observação','Status','Motivo do encerramento','Assumido por','Assumido em','Devolvido em','Devolvido por','Finalizado em','Finalizado por','Cancelado em','Cancelado por','Motivo do cancelamento','Reaberturas','SLA (h)','Tempo consumido (h)','Situação do SLA'];
+  const linhas = rows.map(c => { const s = slaInfo(c); return [c.protocolo, fmtDT(c.created_at), c.solicitante, c.solicitante_setor ? SETORES[c.solicitante_setor] : '', SETORES[c.setor], c.transferido_de ? SETORES[c.transferido_de] : '', c.tipo, c.urgente ? 'Sim' : 'Não', c.urgente ? fmtDT(c.sla_vence_em) : '',
+    c.cliente_nome, maskDoc(c.documento), c.codigo_cliente, (c.nfs || []).join(', '), c.pedido, c.observacao, statusTxt(c),
+    c.motivo_encerramento === 'nao_pertence' ? 'Não pertence ao setor' : c.motivo_encerramento === 'resolvida' ? 'Demanda resolvida' : '',
+    c.em_andamento_por, fmtDT(c.em_andamento_em), fmtDT(c.devolvido_em), c.devolvido_por, fmtDT(c.finalizado_em), c.finalizado_por, fmtDT(c.cancelado_em), c.cancelado_por, c.motivo_cancelamento,
+    c.reaberturas || 0, c.urgente ? '' : c.sla_horas, horasBR(s.cons), SLA_NOME[s.cat]].map(csvCell).join(';'); });
+  const csv = '﻿' + [cab.join(';'), ...linhas].join('\r\n');
+  const nome = S.tab === 'MEUS' ? 'todos' : S.tab === 'SAC' && S.sub === 'abertos' ? 'abertos_pelo_sac' : SETORES[S.tab].toLowerCase().replace(/[^a-z]+/g, '_');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `chamados_${nome}${de || ate ? `_${de || 'inicio'}_a_${ate || 'hoje'}` : ''}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  $('#csvModal').classList.remove('show'); toast(`${rows.length} chamados exportados`, 'ok');
+};
+
+// ---------- copiar ----------
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy]'); if(!b) return;
+  e.stopPropagation();
+  const v = b.dataset.copy;
+  (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => toast('Copiado: ' + v, 'ok')).catch(() => toast('Copiado: ' + v, 'ok'));
+}, true);
+
 // ---------- atualização automática (tempo real) ----------
-let rtT, rtIds = new Set();
+let rtT, rtIds = new Set(), rtMsgs = [];
 function onRt(tabela, p){
   const row = p.new && Object.keys(p.new).length ? p.new : (p.old || {});
   const id = tabela === 'chamados' ? row.id : row.chamado_id;
   if(id) rtIds.add(id);
-  if(tabela === 'chamados' && p.eventType === 'INSERT' && row.urgente && S.tab === 'FIN')
-    toast(`Novo chamado URGENTE: ${row.protocolo}`, 'urg', 10000);
+  if(tabela === 'historico' && p.eventType === 'INSERT' && row.tipo === 'mensagem' && papelDe(row) === 'set') rtMsgs.push(row);
   clearTimeout(rtT);
   rtT = setTimeout(async () => {
-    const ids = rtIds; rtIds = new Set();
-    await load(true);
-    if(S.open && $('#drawer').classList.contains('show') && ids.has(S.open.id)) openDetail(S.open.id);
+    const ids = rtIds, msgs = rtMsgs; rtIds = new Set(); rtMsgs = [];
+    const antes = DB.chamados.map(c => ({ ...c }));
+    try { await carregarChamados(); } catch(e){ return err(e); }
+    avisos(antes, DB.chamados, msgs);
+    if(S.open && $('#drawer').classList.contains('show') && ids.has(S.open.id)){ S.open = DB.chamados.find(c => c.id === S.open.id) || S.open; await carregarDetalhe(S.open.id); }
+    render();
   }, 700);
+}
+function avisos(antes, depois, msgs){
+  const setor = ctxSetor(), meu = S.tab === 'MEUS' ? $('#fSol').value : '';
+  depois.forEach(c => {
+    const old = antes.find(x => x.id === c.id);
+    if(!old){
+      if(setor && ctxPapel() === 'set' && c.setor === setor) toast(`Novo chamado${c.urgente ? ' URGENTE' : ''}: ${c.protocolo}`, c.urgente ? 'urg' : 'info', 8000);
+      return;
+    }
+    if(old.setor !== c.setor && setor && ctxPapel() === 'set' && c.setor === setor) toast(`Chamado transferido para você: ${c.protocolo}`, c.urgente ? 'urg' : 'info', 8000);
+    if(meu && c.solicitante === meu && old.status !== c.status && ['Aguardando','Finalizado','Devolvido'].includes(c.status))
+      toast(`Seu chamado ${c.protocolo}: ${statusTxt(c)}`, 'info', 8000);
+  });
+  if(meu) msgs.forEach(m => { const c = depois.find(x => x.id === m.chamado_id); if(c && c.solicitante === meu) toast(`Nova resposta no seu chamado ${c.protocolo}`, 'info', 8000); });
 }
 function iniciaTempoReal(){
   try {
-    const ch = sb.channel('fin-rt-' + (CONFIG.PREFIX || 'prod'));
-    ['chamados','historico','anexos'].forEach(t =>
-      ch.on('postgres_changes', { event: '*', schema: 'public', table: T(t) }, p => onRt(t, p)));
+    const ch = sb.channel('cco-rt-' + (CONFIG.PREFIX || 'prod'));
+    ['chamados','historico','anexos'].forEach(t => ch.on('postgres_changes', { event: '*', schema: 'public', table: T(t) }, p => onRt(t, p)));
     ch.subscribe(st => { S.rt = st === 'SUBSCRIBED'; });
   } catch(e){ console.error(e); S.rt = false; }
 }
+// sem conexão em tempo real: atualiza a cada minuto; com conexão, só refaz o semáforo
+setInterval(() => { if(!S.rt) recarregar(S.open && S.open.id); else render(); }, 60000);
 
-// Esc fecha o que estiver aberto
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape') return;
   if($('#askModal').classList.contains('show')) $('#askCancel').click();
+  else if($('#trModal').classList.contains('show')) $('#trModal').classList.remove('show');
   else if($('#csvModal').classList.contains('show')) $('#csvModal').classList.remove('show');
   else if($('#novoModal').classList.contains('show')) $('#novoModal').classList.remove('show');
   else if($('#drawer').classList.contains('show')) closeDrawer();
 });
 
 // ---------- início ----------
-(function init(){
+(async function init(){
   $('#env').textContent = CONFIG.AMBIENTE; $('#env').style.display = CONFIG.AMBIENTE ? '' : 'none';
-  $('#fStatus').innerHTML = `<option value="ativos">Ativos</option><option value="">Todos</option>` + STATUS.map(s => `<option value="${s}">${esc(statusLabel(s))}</option>`).join('');
-  renderTipos();
-  $('#fAberto').innerHTML = `<option value="">Todos</option>`;
-  setTab(S.tab);
-  if(!configurado){ $('#cfgwarn').style.display = 'block'; $('#rows').innerHTML = `<tr><td colspan="10" class="empty">Aguardando configuração</td></tr>`; return; }
-  loadPessoas(); loadTipos(); load(); iniciaTempoReal();
+  if(!['MEUS', ...SET_KEYS].includes(S.tab)) S.tab = 'MEUS';
+  $('#rows').innerHTML = `<tr><td colspan="10" class="empty">Carregando…</td></tr>`;
+  try { await carregarBase(); await carregarChamados(); }
+  catch(e){ err(e); $('#rows').innerHTML = `<tr><td colspan="10" class="empty">Não foi possível carregar os chamados</td></tr>`; return; }
+  renderFiltros(); render(); iniciaTempoReal();
 })();
 </script>
 </body>
